@@ -1,0 +1,6 @@
+export { DashboardSkeleton } from './DashboardSkeleton'
+export { BookingsSkeleton } from './BookingsSkeleton'
+export { GuestsSkeleton } from './GuestsSkeleton'
+export { BroadcastsSkeleton } from './BroadcastsSkeleton'
+export { SettingsSkeleton } from './SettingsSkeleton'
+export { PageSkeleton } from './PageSkeleton'
