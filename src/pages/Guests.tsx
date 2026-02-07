@@ -32,20 +32,6 @@ import { ResponsiveModal } from '@/components/ResponsiveModal'
 import { GuestsSkeleton } from '@/components/skeletons'
 import type { Guest } from '@/types'
 
-function formatLastVisit(iso: string | null): string {
-  if (!iso) return '—'
-  try {
-    return new Date(iso).toLocaleDateString('ru-RU', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  } catch {
-    return iso
-  }
-}
 
 /** Страница гостей: карточки метрик, поиск, таблица, экспорт CSV (admin), добавление и редактирование. */
 export function Guests() {
@@ -404,7 +390,7 @@ export function Guests() {
               <TableHead>ТЕЛЕФОН</TableHead>
               <TableHead>СЕГМЕНТ</TableHead>
               <TableHead>ВИЗИТЫ</TableHead>
-              <TableHead>ПОСЛЕДНИЙ ВИЗИТ</TableHead>
+              <TableHead>ПОДТВЕРЖДЁННЫЕ БРОНИ</TableHead>
               <TableHead className="w-12 text-right">ДЕЙСТВИЯ</TableHead>
             </TableRow>
           </TableHeader>
@@ -433,7 +419,7 @@ export function Guests() {
                   </TableCell>
                   <TableCell>{guest.visits_count}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {formatLastVisit(guest.last_visit_at)}
+                    {guest.visits_count}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
