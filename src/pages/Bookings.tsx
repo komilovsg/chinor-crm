@@ -11,13 +11,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   Table,
   TableBody,
   TableCell,
@@ -32,8 +25,7 @@ import {
   updateBookingStatus,
   type GetBookingsParams,
 } from '@/api/bookings'
-import { getGuests } from '@/api/guests'
-import { DatePicker, TimePicker } from '@/components/pickers'
+import { DatePicker, GuestAutocomplete, TimePicker } from '@/components/pickers'
 import { ResponsiveModal } from '@/components/ResponsiveModal'
 import { BookingsSkeleton } from '@/components/skeletons'
 import type { Booking, BookingStatus, Guest } from '@/types'
@@ -113,9 +105,8 @@ export function Bookings() {
   const [error, setError] = useState<string | null>(null)
 
   const [newBookingOpen, setNewBookingOpen] = useState(false)
-  const [guests, setGuests] = useState<Guest[]>([])
-  const [guestsLoading, setGuestsLoading] = useState(false)
-  const [formGuestId, setFormGuestId] = useState<string>('')
+  const [formSelectedGuest, setFormSelectedGuest] = useState<Guest | null>(null)
+  const [formNewGuest, setFormNewGuest] = useState({ phone: '', name: '', email: '' })
   const [formDate, setFormDate] = useState('')
   const [formTime, setFormTime] = useState('')
   const [formPersons, setFormPersons] = useState<number>(2)
@@ -156,18 +147,10 @@ export function Bookings() {
     loadBookings(params)
   }, [search, dateFilter, loadBookings])
 
-  useEffect(() => {
-    if (!newBookingOpen) return
-    setGuestsLoading(true)
-    setFormError(null)
-    getGuests({ limit: 200 })
-      .then((res) => setGuests(res.items))
-      .catch((err) => setFormError(getApiErrorMessage(err, 'Не удалось загрузить список гостей')))
-      .finally(() => setGuestsLoading(false))
-  }, [newBookingOpen])
 
   const resetNewBookingForm = useCallback(() => {
-    setFormGuestId('')
+    setFormSelectedGuest(null)
+    setFormNewGuest({ phone: '', name: '', email: '' })
     setFormDate('')
     setFormTime('')
     setFormPersons(2)
@@ -176,16 +159,32 @@ export function Bookings() {
 
   const handleNewBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const guestId = formGuestId ? Number(formGuestId) : 0
-    if (!guestId || !formDate.trim() || !formTime.trim() || formPersons < 1) {
-      setFormError('Заполните гостя, дату, время и количество персон')
+    if (!formDate.trim() || !formTime.trim() || formPersons < 1) {
+      setFormError('Заполните дату, время и количество персон')
+      return
+    }
+    const hasGuest = formSelectedGuest || formNewGuest.phone.trim()
+    if (!hasGuest) {
+      setFormError('Введите номер телефона для поиска гостя или создания нового')
+      return
+    }
+    if (!formSelectedGuest && !formNewGuest.name.trim()) {
+      setFormError('Введите имя гостя для нового бронирования')
       return
     }
     setFormSubmitting(true)
     setFormError(null)
     try {
       await createBooking({
-        guestId,
+        ...(formSelectedGuest
+          ? { guestId: formSelectedGuest.id }
+          : {
+              guest: {
+                phone: formNewGuest.phone.trim(),
+                name: formNewGuest.name.trim() || undefined,
+                email: formNewGuest.email.trim() || undefined,
+              },
+            }),
         date: formDate.trim(),
         time: formTime.trim(),
         persons: formPersons,
@@ -241,28 +240,17 @@ export function Bookings() {
           if (!open) resetNewBookingForm()
         }}
         title="Новая бронь"
-        description="Выберите гостя, дату, время и количество персон."
+        description="Введите номер телефона для поиска гостя или создайте нового. Укажите дату, время и количество персон."
       >
         <form onSubmit={handleNewBookingSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="new-booking-guest">Гость</Label>
-            <Select
-              value={formGuestId}
-              onValueChange={setFormGuestId}
-              disabled={guestsLoading}
-            >
-              <SelectTrigger id="new-booking-guest">
-                <SelectValue placeholder={guestsLoading ? 'Загрузка...' : 'Выберите гостя'} />
-              </SelectTrigger>
-              <SelectContent>
-                {guests.map((g) => (
-                  <SelectItem key={g.id} value={String(g.id)}>
-                    {g.name ?? 'Без имени'} — {g.phone}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <GuestAutocomplete
+            id="new-booking-guest"
+            value={formNewGuest}
+            selectedGuest={formSelectedGuest}
+            onSelect={setFormSelectedGuest}
+            onNewGuestChange={setFormNewGuest}
+            placeholder="+998 90 123 45 67"
+          />
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="new-booking-date">Дата</Label>

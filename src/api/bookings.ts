@@ -9,8 +9,17 @@ export interface GetBookingsParams {
   limit?: number
 }
 
+export interface CreateGuestInline {
+  phone: string
+  name?: string
+  email?: string
+}
+
 export interface CreateBookingRequest {
-  guestId: number
+  /** Существующий гость */
+  guestId?: number
+  /** Новый гость (найти по phone или создать) */
+  guest?: CreateGuestInline
   date: string
   time: string
   persons: number

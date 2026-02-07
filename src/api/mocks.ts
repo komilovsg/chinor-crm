@@ -176,16 +176,45 @@ export const mockBookings = {
     return booking
   },
   create: async (data: {
-    guestId: number
+    guestId?: number
+    guest?: { phone: string; name?: string; email?: string }
     date: string
     time: string
     persons: number
   }): Promise<Booking> => {
     await delay(500)
+    let guestId: number
+    let guest: (typeof mockGuestsData)[0] | undefined
+    if (data.guestId) {
+      guestId = data.guestId
+      guest = mockGuestsData.find((g) => g.id === guestId)
+    } else if (data.guest?.phone) {
+      const existing = mockGuestsData.find((g) => g.phone === data.guest!.phone)
+      if (existing) {
+        guestId = existing.id
+        guest = existing
+      } else {
+        const newGuest: (typeof mockGuestsData)[0] = {
+          id: mockGuestsData.length + 1,
+          name: data.guest.name ?? null,
+          phone: data.guest.phone,
+          email: data.guest.email ?? null,
+          segment: 'Новичок',
+          visits_count: 0,
+          last_visit_at: null,
+          created_at: new Date().toISOString(),
+        }
+        mockGuestsData.push(newGuest)
+        guestId = newGuest.id
+        guest = newGuest
+      }
+    } else {
+      throw new Error('Provide guestId or guest.phone')
+    }
     const newBooking: Booking = {
       id: mockBookingsData.length + 1,
-      guest_id: data.guestId,
-      guest: mockGuestsData.find((g) => g.id === data.guestId),
+      guest_id: guestId,
+      guest: guest ? { id: guest.id, name: guest.name, phone: guest.phone } : undefined,
       booking_time: `${data.date}T${data.time}:00Z`,
       guests_count: data.persons,
       status: 'pending',
