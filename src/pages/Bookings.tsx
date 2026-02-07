@@ -150,7 +150,7 @@ export function Bookings() {
   }, [])
 
   useEffect(() => {
-    const params: GetBookingsParams = {}
+    const params: GetBookingsParams = { limit: 100 }
     if (search.trim()) params.search = search.trim()
     if (dateFilter) params.date = dateFilter
     loadBookings(params)
@@ -337,6 +337,12 @@ export function Bookings() {
       {error && (
         <p className="text-sm text-destructive" role="alert">
           {error}
+        </p>
+      )}
+
+      {!loading && (
+        <p className="text-sm text-muted-foreground">
+          Показано {data.items.length} из {data.total}
         </p>
       )}
 

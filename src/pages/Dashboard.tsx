@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Calendar,
   CalendarRange,
@@ -77,56 +78,64 @@ export function Dashboard() {
       </div>
 
       <div className="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Всего броней
-            </CardTitle>
-            <Calendar className="h-10 w-10 text-primary" />
-          </CardHeader>
-          <CardContent>
+        <Link to="/bookings" className="block transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background rounded-xl">
+          <Card className="cursor-pointer h-full">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Всего броней
+              </CardTitle>
+              <Calendar className="h-10 w-10 text-primary" />
+            </CardHeader>
+            <CardContent>
               <div className="text-2xl font-bold">{stats?.totalBookings ?? 0}</div>
               <p className="text-xs text-muted-foreground">за все время</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Сегодня ожидаем
-            </CardTitle>
-            <MessageCircle className="h-10 w-10 text-primary" />
-          </CardHeader>
-          <CardContent>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/bookings" className="block transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background rounded-xl">
+          <Card className="cursor-pointer h-full">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Сегодня ожидаем
+              </CardTitle>
+              <MessageCircle className="h-10 w-10 text-primary" />
+            </CardHeader>
+            <CardContent>
               <div className="text-2xl font-bold">{stats?.todayArrivals ?? 0}</div>
               <p className="text-xs text-muted-foreground">гостей к прибытию</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              База гостей
-            </CardTitle>
-            <Users className="h-10 w-10 text-primary" />
-          </CardHeader>
-          <CardContent>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/guests" className="block transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background rounded-xl">
+          <Card className="cursor-pointer h-full">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                База гостей
+              </CardTitle>
+              <Users className="h-10 w-10 text-primary" />
+            </CardHeader>
+            <CardContent>
               <div className="text-2xl font-bold">{stats?.guestCount ?? 0}</div>
               <p className="text-xs text-muted-foreground">всего контактов</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              No-Show Rate
-            </CardTitle>
-            <TrendingUp className="h-10 w-10 text-primary" />
-          </CardHeader>
-          <CardContent>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/bookings" className="block transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background rounded-xl">
+          <Card className="cursor-pointer h-full">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                No-Show Rate
+              </CardTitle>
+              <TrendingUp className="h-10 w-10 text-primary" />
+            </CardHeader>
+            <CardContent>
               <div className="text-2xl font-bold">
                 {stats != null ? `${stats.noShowRate}%` : '0%'}
               </div>
               <p className="text-xs text-muted-foreground">процент неявки</p>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       <div className="grid w-full gap-4 lg:grid-cols-2">
