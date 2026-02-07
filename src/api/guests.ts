@@ -18,6 +18,7 @@ export interface UpdateGuestRequest {
   name?: string
   phone?: string
   email?: string
+  segment?: string
 }
 
 export interface GuestStats {

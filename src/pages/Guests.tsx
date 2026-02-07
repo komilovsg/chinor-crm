@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Crown, Download, Search, UserCheck, UserPlus, Users } from 'lucide-react'
+import { Crown, Download, Pencil, Plus, Search, UserCheck, UserPlus, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -8,6 +8,14 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -17,10 +25,24 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { getApiErrorMessage } from '@/api/client'
-import { getGuests, getGuestStats, exportGuests } from '@/api/guests'
+import {
+  createGuest,
+  exportGuests,
+  getGuests,
+  getGuestStats,
+  updateGuest,
+} from '@/api/guests'
 import type { GuestStats } from '@/api/guests'
+import { ResponsiveModal } from '@/components/ResponsiveModal'
 import { GuestsSkeleton } from '@/components/skeletons'
 import type { Guest } from '@/types'
+
+const SEGMENT_OPTIONS = [
+  { value: 'Новичок', label: 'Новичок' },
+  { value: 'Новички', label: 'Новички' },
+  { value: 'Постоянный', label: 'Постоянный' },
+  { value: 'VIP', label: 'VIP' },
+] as const
 
 function formatLastVisit(iso: string | null): string {
   if (!iso) return '—'
@@ -37,7 +59,7 @@ function formatLastVisit(iso: string | null): string {
   }
 }
 
-/** Страница гостей: карточки метрик, поиск, таблица, экспорт CSV. */
+/** Страница гостей: карточки метрик, поиск, таблица, экспорт CSV, добавление и редактирование. */
 export function Guests() {
   const [search, setSearch] = useState('')
   const [stats, setStats] = useState<GuestStats | null>(null)
@@ -48,6 +70,15 @@ export function Guests() {
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [addModalOpen, setAddModalOpen] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editGuest, setEditGuest] = useState<Guest | null>(null)
+  const [formName, setFormName] = useState('')
+  const [formPhone, setFormPhone] = useState('')
+  const [formSegment, setFormSegment] = useState<string>('Новичок')
+  const [formSubmitting, setFormSubmitting] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -87,6 +118,78 @@ export function Guests() {
     }
   }
 
+  const resetAddForm = useCallback(() => {
+    setFormName('')
+    setFormPhone('')
+    setFormSegment('Новичок')
+    setFormError(null)
+  }, [])
+
+  const resetEditForm = useCallback(() => {
+    setEditGuest(null)
+    setFormName('')
+    setFormPhone('')
+    setFormSegment('Новичок')
+    setFormError(null)
+  }, [])
+
+  const handleAddSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formPhone.trim()) {
+      setFormError('Телефон обязателен')
+      return
+    }
+    setFormSubmitting(true)
+    setFormError(null)
+    try {
+      await createGuest({
+        name: formName.trim() || undefined,
+        phone: formPhone.trim(),
+      })
+      setAddModalOpen(false)
+      resetAddForm()
+      loadData()
+    } catch (err) {
+      setFormError(getApiErrorMessage(err, 'Не удалось добавить гостя'))
+    } finally {
+      setFormSubmitting(false)
+    }
+  }
+
+  const handleEditClick = useCallback((guest: Guest) => {
+    setEditGuest(guest)
+    setFormName(guest.name ?? '')
+    setFormPhone(guest.phone)
+    setFormSegment(guest.segment || 'Новичок')
+    setFormError(null)
+    setEditModalOpen(true)
+  }, [])
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editGuest) return
+    if (!formPhone.trim()) {
+      setFormError('Телефон обязателен')
+      return
+    }
+    setFormSubmitting(true)
+    setFormError(null)
+    try {
+      await updateGuest(editGuest.id, {
+        name: formName.trim() || undefined,
+        phone: formPhone.trim(),
+        segment: formSegment,
+      })
+      setEditModalOpen(false)
+      resetEditForm()
+      loadData()
+    } catch (err) {
+      setFormError(getApiErrorMessage(err, 'Не удалось обновить гостя'))
+    } finally {
+      setFormSubmitting(false)
+    }
+  }
+
   const isInitialLoad = loading && data.items.length === 0 && !stats
   if (isInitialLoad) {
     return <GuestsSkeleton />
@@ -101,16 +204,142 @@ export function Guests() {
             База гостей и сегменты.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExport}
-          disabled={exporting}
-        >
-          <Download className="h-4 w-4 shrink-0" />
-          {exporting ? 'Экспорт...' : 'Экспорт CSV'}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            className="min-w-[160px]"
+            onClick={() => { setAddModalOpen(true); resetAddForm(); }}
+          >
+            <Plus className="h-4 w-4 shrink-0" />
+            Добавить гостя
+          </Button>
+          <Button
+            variant="outline"
+            className="min-w-[160px]"
+            onClick={handleExport}
+            disabled={exporting}
+          >
+            <Download className="h-4 w-4 shrink-0" />
+            {exporting ? 'Экспорт...' : 'Экспорт CSV'}
+          </Button>
+        </div>
       </div>
+
+      <ResponsiveModal
+        open={addModalOpen}
+        onOpenChange={(open) => {
+          setAddModalOpen(open)
+          if (!open) resetAddForm()
+        }}
+        title="Добавить гостя"
+        description="Введите данные нового гостя. Телефон обязателен."
+      >
+        <form onSubmit={handleAddSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="add-guest-name">Имя</Label>
+            <Input
+              id="add-guest-name"
+              value={formName}
+              onChange={(e) => setFormName(e.target.value)}
+              placeholder="Имя гостя"
+              autoComplete="name"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="add-guest-phone">Телефон *</Label>
+            <Input
+              id="add-guest-phone"
+              value={formPhone}
+              onChange={(e) => setFormPhone(e.target.value)}
+              placeholder="+992901234567"
+              required
+              autoComplete="tel"
+            />
+          </div>
+          {formError && (
+            <p className="text-sm text-destructive" role="alert">
+              {formError}
+            </p>
+          )}
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setAddModalOpen(false)}
+            >
+              Отмена
+            </Button>
+            <Button type="submit" disabled={formSubmitting}>
+              {formSubmitting ? 'Добавление...' : 'Добавить'}
+            </Button>
+          </div>
+        </form>
+      </ResponsiveModal>
+
+      <ResponsiveModal
+        open={editModalOpen}
+        onOpenChange={(open) => {
+          setEditModalOpen(open)
+          if (!open) resetEditForm()
+        }}
+        title="Редактировать гостя"
+        description="Измените данные гостя."
+      >
+        <form onSubmit={handleEditSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="edit-guest-name">Имя</Label>
+            <Input
+              id="edit-guest-name"
+              value={formName}
+              onChange={(e) => setFormName(e.target.value)}
+              placeholder="Имя гостя"
+              autoComplete="name"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-guest-phone">Телефон *</Label>
+            <Input
+              id="edit-guest-phone"
+              value={formPhone}
+              onChange={(e) => setFormPhone(e.target.value)}
+              placeholder="+992901234567"
+              required
+              autoComplete="tel"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-guest-segment">Сегмент</Label>
+            <Select value={formSegment} onValueChange={setFormSegment}>
+              <SelectTrigger id="edit-guest-segment">
+                <SelectValue placeholder="Сегмент" />
+              </SelectTrigger>
+              <SelectContent>
+                {SEGMENT_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {formError && (
+            <p className="text-sm text-destructive" role="alert">
+              {formError}
+            </p>
+          )}
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditModalOpen(false)}
+            >
+              Отмена
+            </Button>
+            <Button type="submit" disabled={formSubmitting}>
+              {formSubmitting ? 'Сохранение...' : 'Сохранить'}
+            </Button>
+          </div>
+        </form>
+      </ResponsiveModal>
 
       <div className="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -186,18 +415,19 @@ export function Guests() {
               <TableHead>СЕГМЕНТ</TableHead>
               <TableHead>ВИЗИТЫ</TableHead>
               <TableHead>ПОСЛЕДНИЙ ВИЗИТ</TableHead>
+              <TableHead className="w-12 text-right">ДЕЙСТВИЯ</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading && data.items.length > 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                   Обновление...
                 </TableCell>
               </TableRow>
             ) : data.items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                   Нет гостей
                 </TableCell>
               </TableRow>
@@ -214,6 +444,17 @@ export function Guests() {
                   <TableCell>{guest.visits_count}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatLastVisit(guest.last_visit_at)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      onClick={() => handleEditClick(guest)}
+                      title="Редактировать"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))
