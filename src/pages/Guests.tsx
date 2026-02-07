@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Crown, Download, Pencil, Plus, Search, UserCheck, UserPlus, Users } from 'lucide-react'
+import { CalendarPlus, Crown, Download, Pencil, Plus, Search, UserCheck, UserPlus, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -10,13 +10,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   Table,
   TableBody,
   TableCell,
@@ -25,7 +18,9 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { getApiErrorMessage } from '@/api/client'
+import { useAuth } from '@/hooks/useAuth'
 import {
+  addGuestVisit,
   createGuest,
   exportGuests,
   getGuests,
@@ -36,13 +31,6 @@ import type { GuestStats } from '@/api/guests'
 import { ResponsiveModal } from '@/components/ResponsiveModal'
 import { GuestsSkeleton } from '@/components/skeletons'
 import type { Guest } from '@/types'
-
-const SEGMENT_OPTIONS = [
-  { value: 'Новичок', label: 'Новичок' },
-  { value: 'Новички', label: 'Новички' },
-  { value: 'Постоянный', label: 'Постоянный' },
-  { value: 'VIP', label: 'VIP' },
-] as const
 
 function formatLastVisit(iso: string | null): string {
   if (!iso) return '—'
@@ -59,8 +47,10 @@ function formatLastVisit(iso: string | null): string {
   }
 }
 
-/** Страница гостей: карточки метрик, поиск, таблица, экспорт CSV, добавление и редактирование. */
+/** Страница гостей: карточки метрик, поиск, таблица, экспорт CSV (admin), добавление и редактирование. */
 export function Guests() {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const [search, setSearch] = useState('')
   const [stats, setStats] = useState<GuestStats | null>(null)
   const [data, setData] = useState<{ items: Guest[]; total: number }>({
@@ -76,9 +66,9 @@ export function Guests() {
   const [editGuest, setEditGuest] = useState<Guest | null>(null)
   const [formName, setFormName] = useState('')
   const [formPhone, setFormPhone] = useState('')
-  const [formSegment, setFormSegment] = useState<string>('Новичок')
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [addingVisit, setAddingVisit] = useState<number | null>(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -121,7 +111,6 @@ export function Guests() {
   const resetAddForm = useCallback(() => {
     setFormName('')
     setFormPhone('')
-    setFormSegment('Новичок')
     setFormError(null)
   }, [])
 
@@ -129,7 +118,6 @@ export function Guests() {
     setEditGuest(null)
     setFormName('')
     setFormPhone('')
-    setFormSegment('Новичок')
     setFormError(null)
   }, [])
 
@@ -156,11 +144,22 @@ export function Guests() {
     }
   }
 
+  const handleAddVisit = async (guestId: number) => {
+    setAddingVisit(guestId)
+    try {
+      await addGuestVisit(guestId)
+      loadData()
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Не удалось добавить визит'))
+    } finally {
+      setAddingVisit(null)
+    }
+  }
+
   const handleEditClick = useCallback((guest: Guest) => {
     setEditGuest(guest)
     setFormName(guest.name ?? '')
     setFormPhone(guest.phone)
-    setFormSegment(guest.segment || 'Новичок')
     setFormError(null)
     setEditModalOpen(true)
   }, [])
@@ -178,7 +177,6 @@ export function Guests() {
       await updateGuest(editGuest.id, {
         name: formName.trim() || undefined,
         phone: formPhone.trim(),
-        segment: formSegment,
       })
       setEditModalOpen(false)
       resetEditForm()
@@ -212,15 +210,17 @@ export function Guests() {
             <Plus className="h-4 w-4 shrink-0" />
             Добавить гостя
           </Button>
-          <Button
-            variant="outline"
-            className="min-w-[160px]"
-            onClick={handleExport}
-            disabled={exporting}
-          >
-            <Download className="h-4 w-4 shrink-0" />
-            {exporting ? 'Экспорт...' : 'Экспорт CSV'}
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="outline"
+              className="min-w-[160px]"
+              onClick={handleExport}
+              disabled={exporting}
+            >
+              <Download className="h-4 w-4 shrink-0" />
+              {exporting ? 'Экспорт...' : 'Экспорт CSV'}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -306,21 +306,11 @@ export function Guests() {
               autoComplete="tel"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="edit-guest-segment">Сегмент</Label>
-            <Select value={formSegment} onValueChange={setFormSegment}>
-              <SelectTrigger id="edit-guest-segment">
-                <SelectValue placeholder="Сегмент" />
-              </SelectTrigger>
-              <SelectContent>
-                {SEGMENT_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {editGuest && (
+            <p className="text-sm text-muted-foreground">
+              Сегмент: <span className="font-medium text-foreground">{editGuest.segment}</span> (рассчитывается автоматически)
+            </p>
+          )}
           {formError && (
             <p className="text-sm text-destructive" role="alert">
               {formError}
@@ -446,15 +436,27 @@ export function Guests() {
                     {formatLastVisit(guest.last_visit_at)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                      onClick={() => handleEditClick(guest)}
-                      title="Редактировать"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        onClick={() => handleAddVisit(guest.id)}
+                        disabled={addingVisit === guest.id}
+                        title="Добавить визит"
+                      >
+                        <CalendarPlus className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        onClick={() => handleEditClick(guest)}
+                        title="Редактировать"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

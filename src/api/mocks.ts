@@ -108,6 +108,8 @@ const mockSettingsData: Settings = {
   pushNotifications: true,
   webhookUrl: 'https://n8n.srv1133208.hstgr.cloud/webhook/get-list',
   autoBackup: true,
+  segment_regular_threshold: 5,
+  segment_vip_threshold: 10,
 }
 
 /** Мок-функции. */

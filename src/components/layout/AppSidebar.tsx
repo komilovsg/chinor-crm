@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Calendar,
   Users,
+  UserCog,
   Send,
   Settings,
   LogOut,
@@ -20,6 +21,10 @@ const navItems = [
   { to: '/guests', label: 'Гости', icon: Users },
   { to: '/broadcasts', label: 'Рассылки', icon: Send },
   { to: '/settings', label: 'Настройки', icon: Settings },
+] as const
+
+const adminNavItems = [
+  { to: '/users', label: 'Пользователи', icon: UserCog },
 ] as const
 
 function getInitials(displayName: string): string {
@@ -110,6 +115,29 @@ export function AppSidebar({
                 {!isCollapsed && <span>{label}</span>}
               </NavLink>
             ))}
+            {user?.role === 'admin' &&
+              adminNavItems.map(({ to, label, icon: Icon }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  onClick={onNavClick}
+                  title={isCollapsed ? label : undefined}
+                  className={({ isActive }) =>
+                    cn(
+                      'flex min-h-[44px] items-center rounded-md py-2 text-sm font-medium transition-colors',
+                      isCollapsed
+                        ? 'justify-center px-0'
+                        : 'gap-3 px-3',
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    )
+                  }
+                >
+                  <Icon className="h-5 w-5 shrink-0" />
+                  {!isCollapsed && <span>{label}</span>}
+                </NavLink>
+              ))}
           </div>
         </nav>
         {onToggleCollapse && (

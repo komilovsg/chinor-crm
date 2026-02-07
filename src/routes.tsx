@@ -7,6 +7,7 @@ import { Bookings } from '@/pages/Bookings'
 import { Guests } from '@/pages/Guests'
 import { Broadcasts } from '@/pages/Broadcasts'
 import { Settings } from '@/pages/Settings'
+import { UsersPage } from '@/pages/UsersPage'
 
 /** Защищённый маршрут: при отсутствии JWT редирект на /login; иначе MainLayout с Outlet. */
 function ProtectedRoute() {
@@ -15,6 +16,15 @@ function ProtectedRoute() {
     return <Navigate to="/login" replace />
   }
   return <MainLayout />
+}
+
+/** Маршрут только для admin: при отсутствии роли admin — редирект на /. */
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth()
+  if (user?.role !== 'admin') {
+    return <Navigate to="/" replace />
+  }
+  return <>{children}</>
 }
 
 /** Заглушки страниц (контент добавится в F10–F12). */
@@ -28,6 +38,14 @@ export function AppRoutes() {
         <Route path="guests" element={<Guests />} />
         <Route path="broadcasts" element={<Broadcasts />} />
         <Route path="settings" element={<Settings />} />
+        <Route
+          path="users"
+          element={
+            <AdminRoute>
+              <UsersPage />
+            </AdminRoute>
+          }
+        />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

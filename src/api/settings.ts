@@ -6,6 +6,19 @@ export interface UpdateSettingsRequest {
   pushNotifications?: boolean
   webhookUrl?: string
   autoBackup?: boolean
+  segment_regular_threshold?: number
+  segment_vip_threshold?: number
+}
+
+/** Пересчитать сегменты всех гостей по текущим порогам. Доступ: только admin. */
+export async function recalcSegments(): Promise<{ total: number; updated: number }> {
+  if (USE_MOCKS) {
+    return { total: 0, updated: 0 }
+  }
+  const response = await apiClient.post<{ total: number; updated: number }>(
+    '/settings/recalc-segments'
+  )
+  return response.data
 }
 
 /** Получить настройки. */

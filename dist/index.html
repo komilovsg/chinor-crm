@@ -1,12 +1,19 @@
 <!DOCTYPE html>
-<html lang="ru" class="dark">
+<html lang="ru">
   <head>
+    <script>
+      (function () {
+        var t = localStorage.getItem('chinor-theme');
+        var dark = t === 'dark' || (t !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', dark);
+      })();
+    </script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CHINOR CRM</title>
-    <script type="module" crossorigin src="/assets/index-BVoxFGXn.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-KGQjBExf.css">
+    <script type="module" crossorigin src="/assets/index-wZZEGMDm.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-k3p6H2tM.css">
   </head>
   <body>
     <div id="root"></div>

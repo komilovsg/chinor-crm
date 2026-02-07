@@ -80,6 +80,19 @@ export async function updateGuest(
   return response.data
 }
 
+/** Добавить визит гостю. Увеличивает visits_count, пересчитывает сегмент. Доступ: admin, hostess_1, hostess_2. */
+export async function addGuestVisit(guestId: number): Promise<Guest> {
+  if (USE_MOCKS) {
+    const g = await mocks.mockGuests.getOne(guestId)
+    return mocks.mockGuests.update(guestId, {
+      visits_count: (g.visits_count || 0) + 1,
+      last_visit_at: new Date().toISOString(),
+    })
+  }
+  const response = await apiClient.post<Guest>(`/guests/${guestId}/visits`)
+  return response.data
+}
+
 /** Экспорт гостей в CSV. */
 export async function exportGuests(params?: { search?: string }): Promise<Blob> {
   if (USE_MOCKS) {

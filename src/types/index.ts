@@ -80,6 +80,17 @@ export interface Settings {
   pushNotifications: boolean
   webhookUrl: string
   autoBackup: boolean
+  segment_regular_threshold: number
+  segment_vip_threshold: number
+}
+
+/** CRM User (admin only API) */
+export interface CrmUser {
+  id: number
+  email: string
+  role: 'admin' | 'hostess_1' | 'hostess_2'
+  display_name: string
+  created_at: string | null
 }
 
 /** Paginated response wrapper */
