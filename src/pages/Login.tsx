@@ -1,26 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChinorLogo } from '@/components/icons'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { getApiErrorMessage } from '@/api/client'
 import { login } from '@/api/auth'
 import { useAuth } from '@/hooks/useAuth'
-import type { ApiError } from '@/api/client'
-
-function getErrorMessage(error: unknown): string {
-  if (axios.isAxiosError(error) && error.response?.data) {
-    const data = error.response.data as ApiError
-    if (typeof data.detail === 'string') return data.detail
-    if (Array.isArray(data.detail) && data.detail[0]?.msg) {
-      return data.detail.map((d) => d.msg).join(', ')
-    }
-  }
-  if (error instanceof Error) return error.message
-  return 'Ошибка входа. Попробуйте снова.'
-}
 
 /** Страница входа: форма email/пароль, вызов api.auth.login(), редирект при успехе, показ ошибки при сбое. */
 export function Login() {
@@ -41,7 +28,7 @@ export function Login() {
       setUser(res.user)
       navigate('/', { replace: true })
     } catch (err) {
-      setError(getErrorMessage(err))
+      setError(getApiErrorMessage(err, 'Ошибка входа. Попробуйте снова.'))
     } finally {
       setLoading(false)
     }

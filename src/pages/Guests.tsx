@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { getApiErrorMessage } from '@/api/client'
 import { getGuests, getGuestStats, exportGuests } from '@/api/guests'
 import type { GuestStats } from '@/api/guests'
 import { GuestsSkeleton } from '@/components/skeletons'
@@ -59,7 +60,7 @@ export function Guests() {
       setStats(statsRes)
       setData({ items: listRes.items, total: listRes.total })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки')
+      setError(getApiErrorMessage(err, 'Ошибка загрузки'))
     } finally {
       setLoading(false)
     }
@@ -79,8 +80,8 @@ export function Guests() {
       a.download = `guests-${new Date().toISOString().slice(0, 10)}.csv`
       a.click()
       URL.revokeObjectURL(url)
-    } catch {
-      setError('Не удалось экспортировать')
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Не удалось экспортировать'))
     } finally {
       setExporting(false)
     }

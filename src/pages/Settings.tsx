@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { useTheme, type ThemeValue } from '@/contexts/ThemeContext'
 import { SettingsSkeleton } from '@/components/skeletons'
+import { getApiErrorMessage } from '@/api/client'
 import { getSettings, updateSettings } from '@/api/settings'
 import { cn } from '@/lib/utils'
 import type { Settings } from '@/types'
@@ -42,7 +43,7 @@ export function Settings() {
       setPushNotifications(res.pushNotifications)
       setAutoBackup(res.autoBackup)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки')
+      setError(getApiErrorMessage(err, 'Ошибка загрузки'))
     } finally {
       setLoading(false)
     }
@@ -65,7 +66,7 @@ export function Settings() {
       setData(updated)
       setSaveSuccess(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка сохранения')
+      setError(getApiErrorMessage(err, 'Ошибка сохранения'))
     } finally {
       setSaving(false)
     }

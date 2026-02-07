@@ -49,3 +49,16 @@ apiClient.interceptors.response.use(
 export interface ApiError {
   detail: string | Array<{ msg: string; loc: string[] }>
 }
+
+/** Извлечь сообщение об ошибке из ответа бэка (detail) или из Error. Для отображения в UI. */
+export function getApiErrorMessage(error: unknown, fallback: string = 'Произошла ошибка'): string {
+  if (axios.isAxiosError(error) && error.response?.data) {
+    const data = error.response.data as ApiError
+    if (typeof data.detail === 'string') return data.detail
+    if (Array.isArray(data.detail) && data.detail[0]?.msg) {
+      return data.detail.map((d) => d.msg).join(', ')
+    }
+  }
+  if (error instanceof Error) return error.message
+  return fallback
+}

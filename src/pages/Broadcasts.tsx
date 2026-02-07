@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { BroadcastsSkeleton } from '@/components/skeletons'
+import { getApiErrorMessage } from '@/api/client'
 import {
   createBroadcast,
   getBroadcastStats,
@@ -69,7 +70,7 @@ export function Broadcasts() {
       setStats(statsRes)
       setHistory(historyRes)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки')
+      setError(getApiErrorMessage(err, 'Ошибка загрузки'))
     } finally {
       setLoading(false)
     }
@@ -94,7 +95,7 @@ export function Broadcasts() {
       setMessageText('')
       loadData()
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Ошибка отправки')
+      setFormError(getApiErrorMessage(err, 'Ошибка отправки'))
     } finally {
       setSubmitting(false)
     }

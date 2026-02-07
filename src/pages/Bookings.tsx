@@ -25,6 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { getApiErrorMessage } from '@/api/client'
 import {
   createBooking,
   getBookings,
@@ -142,7 +143,7 @@ export function Bookings() {
       const res = await getBookings(params)
       setData({ items: res.items, total: res.total })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки')
+      setError(getApiErrorMessage(err, 'Ошибка загрузки'))
     } finally {
       setLoading(false)
     }
@@ -161,7 +162,7 @@ export function Bookings() {
     setFormError(null)
     getGuests({ limit: 200 })
       .then((res) => setGuests(res.items))
-      .catch(() => setFormError('Не удалось загрузить список гостей'))
+      .catch((err) => setFormError(getApiErrorMessage(err, 'Не удалось загрузить список гостей')))
       .finally(() => setGuestsLoading(false))
   }, [newBookingOpen])
 
@@ -193,7 +194,7 @@ export function Bookings() {
       resetNewBookingForm()
       loadBookings({ search: search.trim() || undefined, date: dateFilter || undefined })
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Ошибка создания брони')
+      setFormError(getApiErrorMessage(err, 'Ошибка создания брони'))
     } finally {
       setFormSubmitting(false)
     }
@@ -208,8 +209,8 @@ export function Bookings() {
           b.id === id ? { ...b, status } : b
         ),
       }))
-    } catch {
-      setError('Не удалось обновить статус')
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Не удалось обновить статус'))
     }
   }
 

@@ -15,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { getApiErrorMessage } from '@/api/client'
 import { getDashboardStats } from '@/api/dashboard'
 import { DashboardSkeleton } from '@/components/skeletons'
 import type { DashboardStats } from '@/types'
@@ -32,7 +33,7 @@ export function Dashboard() {
         if (!cancelled) setStats(data)
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Ошибка загрузки')
+        if (!cancelled) setError(getApiErrorMessage(err, 'Ошибка загрузки'))
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
