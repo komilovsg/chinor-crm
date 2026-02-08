@@ -64,7 +64,7 @@ export function AppSidebar({
   return (
     <aside
       className={cn(
-        'flex min-h-screen flex-col justify-between border-r border-border bg-background transition-[width] duration-200 ease-in-out',
+        'flex h-full flex-col justify-between border-r border-border bg-background transition-[width] duration-200 ease-in-out overflow-hidden',
         isCollapsed ? 'w-16' : 'w-56',
         className
       )}

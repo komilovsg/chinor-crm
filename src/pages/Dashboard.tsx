@@ -2,13 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Calendar,
-  CalendarRange,
-  Download,
   MessageCircle,
   Users,
   TrendingUp,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -63,23 +60,11 @@ export function Dashboard() {
 
   return (
     <div className="w-full p-4 sm:p-6 space-y-6 animate-in fade-in duration-300">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Привет, Админ! 👋</h1>
-          <p className="text-muted-foreground">
-            Обзор активности в CHINOR сегодня.
-          </p>
-        </div>
-        <div className="flex w-full sm:w-auto gap-2">
-          <Button variant="outline" size="sm" className="flex-1 min-w-0 sm:flex-initial">
-            <CalendarRange className="h-4 w-4 shrink-0" />
-            Этот месяц
-          </Button>
-          <Button size="sm" className="flex-1 min-w-0 sm:flex-initial">
-            <Download className="h-4 w-4 shrink-0" />
-            Скачать отчёт
-          </Button>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Привет, Админ! 👋</h1>
+        <p className="text-muted-foreground">
+          Обзор активности в CHINOR сегодня.
+        </p>
       </div>
 
       <div className="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-4">

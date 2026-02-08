@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Bell, ChevronDown, ChevronUp, Database, MessageCircle, Save, Sun, Users } from 'lucide-react'
+import { Bell, ChevronDown, ChevronUp, Database, Download, MessageCircle, Save, Sun, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -9,16 +9,58 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { useTheme, type ThemeValue } from '@/contexts/ThemeContext'
 import { SettingsSkeleton } from '@/components/skeletons'
 import { getApiErrorMessage } from '@/api/client'
 import { toast } from '@/lib/toast'
+import { getBroadcastHistory, getBroadcastHistoryExport } from '@/api/broadcasts'
 import { getSettings, recalcSegments, updateSettings } from '@/api/settings'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
-import type { Settings } from '@/types'
+import type { BroadcastHistoryItem, Settings } from '@/types'
+
+function formatBroadcastDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch {
+    return iso
+  }
+}
+
+function downloadBroadcastHistoryCsv(items: BroadcastHistoryItem[]) {
+  const headers = ['Название', 'Дата', 'Текст', 'Доставлено', 'Ошибок']
+  const rows = items.map((item) => [
+    item.campaign.name.replace(/"/g, '""'),
+    formatBroadcastDate(item.campaign.created_at),
+    (item.campaign.message_text || '').replace(/"/g, '""').replace(/\r?\n/g, ' '),
+    String(item.sent_count),
+    String(item.failed_count),
+  ])
+  const csv = [headers.map((h) => `"${h}"`).join(','), ...rows.map((r) => r.map((c) => `"${c}"`).join(','))].join('\r\n')
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `история-рассылок-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 const THEME_OPTIONS: { value: ThemeValue; label: string }[] = [
   { value: 'light', label: 'День' },
@@ -46,6 +88,9 @@ export function Settings() {
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [recalcLoading, setRecalcLoading] = useState(false)
   const [whatsappExpanded, setWhatsappExpanded] = useState(false)
+  const [broadcastHistory, setBroadcastHistory] = useState<BroadcastHistoryItem[]>([])
+  const [broadcastHistoryLoading, setBroadcastHistoryLoading] = useState(false)
+  const [exportLoading, setExportLoading] = useState(false)
 
   const loadSettings = useCallback(async () => {
     if (!isAdmin) {
@@ -77,6 +122,25 @@ export function Settings() {
   useEffect(() => {
     loadSettings()
   }, [loadSettings])
+
+  const loadBroadcastHistory = useCallback(async () => {
+    if (!isAdmin) return
+    setBroadcastHistoryLoading(true)
+    try {
+      const list = await getBroadcastHistory(5)
+      setBroadcastHistory(list)
+    } catch {
+      setBroadcastHistory([])
+    } finally {
+      setBroadcastHistoryLoading(false)
+    }
+  }, [isAdmin])
+
+  useEffect(() => {
+    if (isAdmin && whatsappExpanded) {
+      loadBroadcastHistory()
+    }
+  }, [isAdmin, whatsappExpanded, loadBroadcastHistory])
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -163,17 +227,19 @@ export function Settings() {
 
   return (
     <div className="w-full p-4 sm:p-6 space-y-6 animate-in fade-in duration-300">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Настройки</h1>
-          <p className="text-muted-foreground">
-            Тема, уведомления и системные параметры.
-          </p>
+      <div className="sticky top-0 z-10 -mx-4 -mt-4 flex flex-col gap-4 bg-background px-4 pt-4 pb-4 sm:-mx-6 sm:px-6 sm:pt-6 sm:pb-4 border-b border-border">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Настройки</h1>
+            <p className="text-muted-foreground">
+              Тема, уведомления и системные параметры.
+            </p>
+          </div>
+          <Button type="submit" form="settings-form" disabled={saving}>
+            <Save className="h-4 w-4 shrink-0" />
+            {saving ? 'Сохранение...' : 'Сохранить'}
+          </Button>
         </div>
-        <Button type="submit" form="settings-form" disabled={saving}>
-          <Save className="h-4 w-4 shrink-0" />
-          {saving ? 'Сохранение...' : 'Сохранить'}
-        </Button>
       </div>
 
       {error && (
@@ -324,6 +390,69 @@ export function Settings() {
                     value={defaultTableMessage}
                     onChange={(e) => setDefaultTableMessage(e.target.value)}
                   />
+                </div>
+                <div className="mt-4 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <Label className="text-base font-medium">История рассылок</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={exportLoading}
+                      onClick={async () => {
+                        setExportLoading(true)
+                        try {
+                          const list = await getBroadcastHistoryExport()
+                          downloadBroadcastHistoryCsv(list)
+                          toast.success('Файл выгружен')
+                        } catch (err) {
+                          toast.error(getApiErrorMessage(err, 'Ошибка выгрузки'))
+                        } finally {
+                          setExportLoading(false)
+                        }
+                      }}
+                    >
+                      <Download className="h-4 w-4 shrink-0" />
+                      {exportLoading ? 'Выгрузка...' : 'Выгрузить всю историю'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Последние 5 рассылок. Полная выгрузка — по кнопке выше (только для администратора).
+                  </p>
+                  <div className="rounded-md border border-border overflow-hidden">
+                    {broadcastHistoryLoading ? (
+                      <p className="p-4 text-sm text-muted-foreground">Загрузка...</p>
+                    ) : broadcastHistory.length === 0 ? (
+                      <p className="p-4 text-sm text-muted-foreground">Пока нет рассылок</p>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Название</TableHead>
+                            <TableHead>Дата</TableHead>
+                            <TableHead className="max-w-[200px]">Текст</TableHead>
+                            <TableHead className="text-right">Доставлено</TableHead>
+                            <TableHead className="text-right">Ошибок</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {broadcastHistory.map((item) => (
+                            <TableRow key={item.campaign.id}>
+                              <TableCell className="font-medium">{item.campaign.name}</TableCell>
+                              <TableCell className="text-muted-foreground whitespace-nowrap">
+                                {formatBroadcastDate(item.campaign.created_at)}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground max-w-[200px] truncate">
+                                {item.campaign.message_text || '—'}
+                              </TableCell>
+                              <TableCell className="text-right">{item.sent_count}</TableCell>
+                              <TableCell className="text-right">{item.failed_count}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </div>
                 </div>
               </div>
               <p className="mt-4 text-xs text-muted-foreground">

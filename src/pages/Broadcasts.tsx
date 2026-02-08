@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { AlertCircle, Check, Send, CheckCircle2, XCircle } from 'lucide-react'
+import { Check, Send, CheckCircle2, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -23,10 +23,9 @@ import { toast } from '@/lib/toast'
 import {
   createBroadcast,
   getBroadcastStats,
-  getBroadcastHistory,
   uploadBroadcastImage,
 } from '@/api/broadcasts'
-import type { BroadcastHistoryItem, BroadcastStats } from '@/types'
+import type { BroadcastStats } from '@/types'
 
 const BROADCAST_DRAFT_IMAGE_KEY = 'broadcast_draft_image_url'
 const BROADCAST_DRAFT_IMAGE_FILENAME_KEY = 'broadcast_draft_image_filename'
@@ -38,20 +37,6 @@ const SEGMENT_OPTIONS: { value: string; label: string }[] = [
   { value: 'Новички', label: 'Новички' },
 ]
 
-function formatDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString('ru-RU', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  } catch {
-    return iso
-  }
-}
-
 const GUESTS_SELECTION_KEY = 'broadcast_selected_guest_ids'
 
 /** Страница рассылок: карточки статистики, форма новой рассылки, история. */
@@ -60,7 +45,6 @@ export function Broadcasts() {
   const stateGuestIds = (location.state as { selectedGuestIds?: number[] } | null)?.selectedGuestIds
 
   const [stats, setStats] = useState<BroadcastStats | null>(null)
-  const [history, setHistory] = useState<BroadcastHistoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -93,12 +77,8 @@ export function Broadcasts() {
     setLoading(true)
     setError(null)
     try {
-      const [statsRes, historyRes] = await Promise.all([
-        getBroadcastStats(),
-        getBroadcastHistory(),
-      ])
+      const statsRes = await getBroadcastStats()
       setStats(statsRes)
-      setHistory(historyRes)
     } catch (err) {
       const msg = getApiErrorMessage(err, 'Ошибка загрузки')
       setError(msg)
@@ -414,44 +394,6 @@ export function Broadcasts() {
           </CardContent>
         </Card>
 
-        <Card className="min-w-0 min-h-[320px] flex-1">
-          <CardHeader>
-            <CardTitle>История рассылок</CardTitle>
-          <CardDescription>
-            Список созданных рассылок и результат доставки.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {history.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-              <AlertCircle className="h-10 w-10 mb-2 opacity-50" />
-              <p>Пока нет рассылок</p>
-            </div>
-          ) : (
-            <ul className="space-y-3">
-              {history.map((item) => (
-                <li
-                  key={item.campaign.id}
-                  className="flex flex-col gap-1 rounded-md border border-border p-3"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-medium">{item.campaign.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDate(item.campaign.created_at)}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {item.campaign.message_text}
-                  </p>
-                  <div className="text-xs text-muted-foreground">
-                    Доставлено: {item.sent_count}, ошибок: {item.failed_count}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-          </CardContent>
-        </Card>
       </div>
     </div>
   )

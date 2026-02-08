@@ -18,13 +18,29 @@ export async function getBroadcastStats(): Promise<BroadcastStats> {
   return response.data
 }
 
-/** Получить историю рассылок. */
-export async function getBroadcastHistory(): Promise<BroadcastHistoryItem[]> {
+/** Получить историю рассылок (последние limit записей, по умолчанию 5). */
+export async function getBroadcastHistory(
+  limit: number = 5
+): Promise<BroadcastHistoryItem[]> {
   if (USE_MOCKS) {
     return mocks.mockBroadcasts.getHistory()
   }
   const response = await apiClient.get<BroadcastHistoryItem[]>(
-    '/broadcasts/history'
+    '/broadcasts/history',
+    { params: { limit } }
+  )
+  return response.data
+}
+
+/** Выгрузить всю историю рассылок (только для админа). */
+export async function getBroadcastHistoryExport(): Promise<
+  BroadcastHistoryItem[]
+> {
+  if (USE_MOCKS) {
+    return mocks.mockBroadcasts.getHistory()
+  }
+  const response = await apiClient.get<BroadcastHistoryItem[]>(
+    '/broadcasts/history/export'
   )
   return response.data
 }

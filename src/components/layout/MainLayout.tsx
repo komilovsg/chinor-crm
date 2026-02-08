@@ -10,16 +10,16 @@ export function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   return (
-    <div className="flex min-h-screen bg-background items-stretch">
+    <div className="flex h-full min-h-0 bg-background overflow-hidden">
       <AppSidebar
-        className="hidden md:flex"
+        className="hidden md:flex shrink-0"
         isCollapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
       />
       <MobileSheet open={sheetOpen} onOpenChange={setSheetOpen} />
-      <div className="flex flex-1 flex-col min-w-0 min-h-screen w-full">
+      <div className="flex flex-1 flex-col min-w-0 min-h-0 w-full overflow-hidden">
         <AppHeader onMenuClick={() => setSheetOpen(true)} />
-        <main className="min-w-0 w-full flex-1 overflow-x-auto">
+        <main className="min-w-0 w-full flex-1 overflow-y-auto overflow-x-auto">
           <Outlet />
         </main>
       </div>
