@@ -18,6 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { getApiErrorMessage } from '@/api/client'
+import { toast } from '@/lib/toast'
 import { useAuth } from '@/hooks/useAuth'
 import {
   addGuestVisit,
@@ -67,7 +68,9 @@ export function Guests() {
       setStats(statsRes)
       setData({ items: listRes.items, total: listRes.total })
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Ошибка загрузки'))
+      const msg = getApiErrorMessage(err, 'Ошибка загрузки')
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
@@ -87,8 +90,11 @@ export function Guests() {
       a.download = `guests-${new Date().toISOString().slice(0, 10)}.csv`
       a.click()
       URL.revokeObjectURL(url)
+      toast.success('Экспорт в CSV завершён')
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Не удалось экспортировать'))
+      const msg = getApiErrorMessage(err, 'Не удалось экспортировать')
+      setError(msg)
+      toast.error(msg)
     } finally {
       setExporting(false)
     }
@@ -123,8 +129,11 @@ export function Guests() {
       setAddModalOpen(false)
       resetAddForm()
       loadData()
+      toast.success('Гость добавлен в базу')
     } catch (err) {
-      setFormError(getApiErrorMessage(err, 'Не удалось добавить гостя'))
+      const msg = getApiErrorMessage(err, 'Не удалось добавить гостя')
+      setFormError(msg)
+      toast.error(msg)
     } finally {
       setFormSubmitting(false)
     }
@@ -135,8 +144,11 @@ export function Guests() {
     try {
       await addGuestVisit(guestId)
       loadData()
+      toast.success('Визит добавлен')
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Не удалось добавить визит'))
+      const msg = getApiErrorMessage(err, 'Не удалось добавить визит')
+      setError(msg)
+      toast.error(msg)
     } finally {
       setAddingVisit(null)
     }
@@ -167,8 +179,11 @@ export function Guests() {
       setEditModalOpen(false)
       resetEditForm()
       loadData()
+      toast.success('Данные гостя сохранены')
     } catch (err) {
-      setFormError(getApiErrorMessage(err, 'Не удалось обновить гостя'))
+      const msg = getApiErrorMessage(err, 'Не удалось обновить гостя')
+      setFormError(msg)
+      toast.error(msg)
     } finally {
       setFormSubmitting(false)
     }

@@ -19,6 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { getApiErrorMessage } from '@/api/client'
+import { toast } from '@/lib/toast'
 import {
   createUser,
   deleteUser,
@@ -58,7 +59,9 @@ export function UsersPage() {
       const users = await getUsers()
       setList(users)
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Ошибка загрузки'))
+      const msg = getApiErrorMessage(err, 'Ошибка загрузки')
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
@@ -108,8 +111,11 @@ export function UsersPage() {
       setAddModalOpen(false)
       resetAddForm()
       loadData()
+      toast.success('Пользователь создан')
     } catch (err) {
-      setFormError(getApiErrorMessage(err, 'Не удалось создать пользователя'))
+      const msg = getApiErrorMessage(err, 'Не удалось создать пользователя')
+      setFormError(msg)
+      toast.error(msg)
     } finally {
       setFormSubmitting(false)
     }
@@ -144,8 +150,11 @@ export function UsersPage() {
       setEditModalOpen(false)
       resetEditForm()
       loadData()
+      toast.success('Пользователь обновлён')
     } catch (err) {
-      setFormError(getApiErrorMessage(err, 'Не удалось обновить пользователя'))
+      const msg = getApiErrorMessage(err, 'Не удалось обновить пользователя')
+      setFormError(msg)
+      toast.error(msg)
     } finally {
       setFormSubmitting(false)
     }
@@ -156,8 +165,11 @@ export function UsersPage() {
     try {
       await deleteUser(user.id)
       loadData()
+      toast.success('Пользователь удалён')
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Не удалось удалить'))
+      const msg = getApiErrorMessage(err, 'Не удалось удалить')
+      setError(msg)
+      toast.error(msg)
     }
   }
 

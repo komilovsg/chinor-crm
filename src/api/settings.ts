@@ -8,6 +8,10 @@ export interface UpdateSettingsRequest {
   autoBackup?: boolean
   segment_regular_threshold?: number
   segment_vip_threshold?: number
+  broadcastWebhookUrl?: string
+  bookingWebhookUrl?: string
+  restaurant_place?: string
+  default_table_message?: string
 }
 
 /** Пересчитать сегменты всех гостей по текущим порогам. Доступ: только admin. */

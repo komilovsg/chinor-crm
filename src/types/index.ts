@@ -44,6 +44,7 @@ export interface Campaign {
   id: number
   name: string
   message_text: string
+  image_url: string | null
   target_segment: string | null
   scheduled_at: string | null
   created_at: string
@@ -82,6 +83,10 @@ export interface Settings {
   autoBackup: boolean
   segment_regular_threshold: number
   segment_vip_threshold: number
+  broadcastWebhookUrl: string
+  bookingWebhookUrl: string
+  restaurant_place: string
+  default_table_message: string
 }
 
 /** CRM User (admin only API) */

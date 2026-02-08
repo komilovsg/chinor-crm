@@ -110,6 +110,10 @@ const mockSettingsData: Settings = {
   autoBackup: true,
   segment_regular_threshold: 5,
   segment_vip_threshold: 10,
+  broadcastWebhookUrl: '',
+  bookingWebhookUrl: '',
+  restaurant_place: 'CHINOR',
+  default_table_message: 'будет назначен',
 }
 
 /** Мок-функции. */
@@ -342,13 +346,18 @@ export const mockBroadcasts = {
     await delay(400)
     return [...mockBroadcastHistoryData]
   },
-  create: async (data: { segment: string; messageText: string }): Promise<Campaign> => {
+  create: async (data: {
+    segment: string
+    messageText: string
+    imageUrl?: string
+  }): Promise<Campaign> => {
     await delay(500)
     const now = new Date().toISOString()
     const campaign: Campaign = {
       id: mockBroadcastHistoryData.length + 1,
       name: `Рассылка: ${data.segment}`,
       message_text: data.messageText,
+      image_url: (data.imageUrl || '').trim() || null,
       target_segment: data.segment,
       scheduled_at: null,
       created_at: now,

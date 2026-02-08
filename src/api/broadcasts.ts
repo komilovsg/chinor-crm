@@ -5,6 +5,7 @@ import type { BroadcastStats, BroadcastHistoryItem, Campaign } from '@/types'
 export interface CreateBroadcastRequest {
   segment: string
   messageText: string
+  imageUrl?: string
 }
 
 /** Получить статистику рассылок. */

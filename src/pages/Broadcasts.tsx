@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -18,6 +19,7 @@ import {
 } from '@/components/ui/select'
 import { BroadcastsSkeleton } from '@/components/skeletons'
 import { getApiErrorMessage } from '@/api/client'
+import { toast } from '@/lib/toast'
 import {
   createBroadcast,
   getBroadcastStats,
@@ -55,6 +57,7 @@ export function Broadcasts() {
 
   const [segment, setSegment] = useState<string>('all')
   const [messageText, setMessageText] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState(false)
@@ -70,7 +73,9 @@ export function Broadcasts() {
       setStats(statsRes)
       setHistory(historyRes)
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Ошибка загрузки'))
+      const msg = getApiErrorMessage(err, 'Ошибка загрузки')
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
@@ -86,16 +91,33 @@ export function Broadcasts() {
       setFormError('Введите текст сообщения')
       return
     }
+    const urlTrimmed = imageUrl.trim()
+    if (urlTrimmed) {
+      try {
+        new URL(urlTrimmed)
+      } catch {
+        setFormError('Некорректный URL изображения')
+        return
+      }
+    }
     setFormError(null)
     setSubmitSuccess(false)
     setSubmitting(true)
     try {
-      await createBroadcast({ segment, messageText: messageText.trim() })
+      await createBroadcast({
+        segment,
+        messageText: messageText.trim(),
+        ...(urlTrimmed ? { imageUrl: urlTrimmed } : {}),
+      })
       setSubmitSuccess(true)
       setMessageText('')
+      setImageUrl('')
       loadData()
+      toast.success('Рассылка создана и добавлена в очередь')
     } catch (err) {
-      setFormError(getApiErrorMessage(err, 'Ошибка отправки'))
+      const msg = getApiErrorMessage(err, 'Ошибка отправки')
+      setFormError(msg)
+      toast.error(msg)
     } finally {
       setSubmitting(false)
     }
@@ -184,6 +206,20 @@ export function Broadcasts() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="broadcast-image">URL изображения (опционально)</Label>
+              <Input
+                id="broadcast-image"
+                type="url"
+                placeholder="https://example.com/promo.jpg"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                JPEG или PNG, до 5 MB. Публичный URL.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="broadcast-message">Текст сообщения</Label>

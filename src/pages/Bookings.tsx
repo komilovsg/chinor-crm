@@ -19,6 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { getApiErrorMessage } from '@/api/client'
+import { toast } from '@/lib/toast'
 import {
   createBooking,
   getBookings,
@@ -134,7 +135,9 @@ export function Bookings() {
       const res = await getBookings(params)
       setData({ items: res.items, total: res.total })
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Ошибка загрузки'))
+      const msg = getApiErrorMessage(err, 'Ошибка загрузки')
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
@@ -192,8 +195,11 @@ export function Bookings() {
       setNewBookingOpen(false)
       resetNewBookingForm()
       loadBookings({ search: search.trim() || undefined, date: dateFilter || undefined })
+      toast.success('Бронирование создано')
     } catch (err) {
-      setFormError(getApiErrorMessage(err, 'Ошибка создания брони'))
+      const msg = getApiErrorMessage(err, 'Ошибка создания брони')
+      setFormError(msg)
+      toast.error(msg)
     } finally {
       setFormSubmitting(false)
     }
@@ -208,8 +214,11 @@ export function Bookings() {
           b.id === id ? { ...b, status } : b
         ),
       }))
+      toast.success(`Статус обновлён: ${STATUS_LABELS[status]}`)
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Не удалось обновить статус'))
+      const msg = getApiErrorMessage(err, 'Не удалось обновить статус')
+      setError(msg)
+      toast.error(msg)
     }
   }
 

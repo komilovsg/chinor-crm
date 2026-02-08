@@ -7,6 +7,7 @@ import { ChinorLogo } from '@/components/icons'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { getApiErrorMessage } from '@/api/client'
+import { toast } from '@/lib/toast'
 import { login } from '@/api/auth'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -30,7 +31,9 @@ export function Login() {
       setUser(res.user)
       navigate('/', { replace: true })
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Ошибка входа. Попробуйте снова.'))
+      const msg = getApiErrorMessage(err, 'Ошибка входа. Попробуйте снова.')
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }

@@ -17,6 +17,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { getApiErrorMessage } from '@/api/client'
+import { toast } from '@/lib/toast'
 import { getDashboardStats } from '@/api/dashboard'
 import { DashboardSkeleton } from '@/components/skeletons'
 import type { DashboardStats } from '@/types'
@@ -34,7 +35,11 @@ export function Dashboard() {
         if (!cancelled) setStats(data)
       })
       .catch((err) => {
-        if (!cancelled) setError(getApiErrorMessage(err, 'Ошибка загрузки'))
+        if (!cancelled) {
+          const msg = getApiErrorMessage(err, 'Ошибка загрузки')
+          setError(msg)
+          toast.error(msg)
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false)

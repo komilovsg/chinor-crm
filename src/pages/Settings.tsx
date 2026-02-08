@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Bell, Database, Save, Sun, Users } from 'lucide-react'
+import { Bell, Database, MessageCircle, Save, Sun, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch'
 import { useTheme, type ThemeValue } from '@/contexts/ThemeContext'
 import { SettingsSkeleton } from '@/components/skeletons'
 import { getApiErrorMessage } from '@/api/client'
+import { toast } from '@/lib/toast'
 import { getSettings, recalcSegments, updateSettings } from '@/api/settings'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
@@ -37,6 +38,10 @@ export function Settings() {
   const [autoBackup, setAutoBackup] = useState(true)
   const [segmentRegular, setSegmentRegular] = useState(5)
   const [segmentVip, setSegmentVip] = useState(10)
+  const [broadcastWebhookUrl, setBroadcastWebhookUrl] = useState('')
+  const [bookingWebhookUrl, setBookingWebhookUrl] = useState('')
+  const [restaurantPlace, setRestaurantPlace] = useState('CHINOR')
+  const [defaultTableMessage, setDefaultTableMessage] = useState('будет назначен')
   const [saving, setSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [recalcLoading, setRecalcLoading] = useState(false)
@@ -55,8 +60,14 @@ export function Settings() {
       setAutoBackup(res.autoBackup)
       setSegmentRegular(res.segment_regular_threshold ?? 5)
       setSegmentVip(res.segment_vip_threshold ?? 10)
+      setBroadcastWebhookUrl(res.broadcastWebhookUrl ?? '')
+      setBookingWebhookUrl(res.bookingWebhookUrl ?? '')
+      setRestaurantPlace(res.restaurant_place ?? 'CHINOR')
+      setDefaultTableMessage(res.default_table_message ?? 'будет назначен')
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Ошибка загрузки'))
+      const msg = getApiErrorMessage(err, 'Ошибка загрузки')
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
@@ -77,11 +88,18 @@ export function Settings() {
         autoBackup,
         segment_regular_threshold: segmentRegular,
         segment_vip_threshold: segmentVip,
+        broadcastWebhookUrl,
+        bookingWebhookUrl,
+        restaurant_place: restaurantPlace,
+        default_table_message: defaultTableMessage,
       })
       setData(updated)
       setSaveSuccess(true)
+      toast.success('Настройки сохранены')
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Ошибка сохранения'))
+      const msg = getApiErrorMessage(err, 'Ошибка сохранения')
+      setError(msg)
+      toast.error(msg)
     } finally {
       setSaving(false)
     }
@@ -237,6 +255,64 @@ export function Settings() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5 text-primary" />
+              Интеграции WhatsApp
+            </CardTitle>
+            <CardDescription>
+              URL webhook n8n для рассылок и уведомлений о бронях. Место и стол по умолчанию — для сообщений гостям.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="settings-broadcast-webhook">Webhook рассылок</Label>
+                <Input
+                  id="settings-broadcast-webhook"
+                  type="url"
+                  placeholder="https://n8n.example.com/webhook/broadcast"
+                  value={broadcastWebhookUrl}
+                  onChange={(e) => setBroadcastWebhookUrl(e.target.value)}
+                  className="font-mono text-sm"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="settings-booking-webhook">Webhook уведомлений о брони</Label>
+                <Input
+                  id="settings-booking-webhook"
+                  type="url"
+                  placeholder="https://n8n.example.com/webhook/booking-created"
+                  value={bookingWebhookUrl}
+                  onChange={(e) => setBookingWebhookUrl(e.target.value)}
+                  className="font-mono text-sm"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="settings-restaurant-place">Место ресторана</Label>
+                <Input
+                  id="settings-restaurant-place"
+                  type="text"
+                  placeholder="CHINOR Restaurant"
+                  value={restaurantPlace}
+                  onChange={(e) => setRestaurantPlace(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="settings-default-table">Стол по умолчанию</Label>
+                <Input
+                  id="settings-default-table"
+                  type="text"
+                  placeholder="будет назначен"
+                  value={defaultTableMessage}
+                  onChange={(e) => setDefaultTableMessage(e.target.value)}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
               Правила сегментации
             </CardTitle>
@@ -282,8 +358,11 @@ export function Settings() {
                     await recalcSegments()
                     setSaveSuccess(true)
                     setTimeout(() => setSaveSuccess(false), 2000)
+                    toast.success('Сегменты пересчитаны')
                   } catch (err) {
-                    setError(getApiErrorMessage(err, 'Ошибка пересчёта'))
+                    const msg = getApiErrorMessage(err, 'Ошибка пересчёта')
+                    setError(msg)
+                    toast.error(msg)
                   } finally {
                     setRecalcLoading(false)
                   }
