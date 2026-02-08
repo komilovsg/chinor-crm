@@ -126,7 +126,11 @@ export function UsersPage() {
     setEditUser(user)
     setFormEmail(user.email)
     setFormPassword('')
-    setFormRole((user.role === 'hostess_1' || user.role === 'hostess_2' ? 'hostess' : user.role) as 'admin' | 'hostess')
+    setFormRole(
+      (['hostess_1', 'hostess_2'].includes(user.role as string) ? 'hostess' : user.role) as
+        | 'admin'
+        | 'hostess'
+    )
     setFormDisplayName(user.display_name)
     setFormError(null)
     setEditModalOpen(true)
