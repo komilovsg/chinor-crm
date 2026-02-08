@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Bell, Database, MessageCircle, Save, Sun, Users } from 'lucide-react'
+import { Bell, ChevronDown, ChevronUp, Database, MessageCircle, Save, Sun, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -45,6 +45,7 @@ export function Settings() {
   const [saving, setSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [recalcLoading, setRecalcLoading] = useState(false)
+  const [whatsappExpanded, setWhatsappExpanded] = useState(false)
 
   const loadSettings = useCallback(async () => {
     if (!isAdmin) {
@@ -253,61 +254,83 @@ export function Settings() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageCircle className="h-5 w-5 text-primary" />
-              Интеграции WhatsApp
-            </CardTitle>
-            <CardDescription>
-              URL webhook n8n для рассылок и уведомлений о бронях. Место и стол по умолчанию — для сообщений гостям.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="settings-broadcast-webhook">Webhook рассылок</Label>
-                <Input
-                  id="settings-broadcast-webhook"
-                  type="url"
-                  placeholder="https://n8n.example.com/webhook/broadcast"
-                  value={broadcastWebhookUrl}
-                  onChange={(e) => setBroadcastWebhookUrl(e.target.value)}
-                  className="font-mono text-sm"
-                />
+          <CardHeader
+            className={cn(
+              'cursor-pointer select-none rounded-t-lg transition-colors hover:bg-muted/50',
+              whatsappExpanded && 'border-b border-border/50'
+            )}
+            onClick={() => setWhatsappExpanded((v) => !v)}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex flex-col gap-1">
+                <CardTitle className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5 text-primary" />
+                  Интеграции WhatsApp
+                </CardTitle>
+                <CardDescription>
+                  URL webhook n8n для рассылок и уведомлений о бронях. Место и стол по умолчанию — для сообщений гостям.
+                </CardDescription>
               </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="settings-booking-webhook">Webhook уведомлений о брони</Label>
-                <Input
-                  id="settings-booking-webhook"
-                  type="url"
-                  placeholder="https://n8n.example.com/webhook/booking-created"
-                  value={bookingWebhookUrl}
-                  onChange={(e) => setBookingWebhookUrl(e.target.value)}
-                  className="font-mono text-sm"
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="settings-restaurant-place">Место ресторана</Label>
-                <Input
-                  id="settings-restaurant-place"
-                  type="text"
-                  placeholder="CHINOR Restaurant"
-                  value={restaurantPlace}
-                  onChange={(e) => setRestaurantPlace(e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="settings-default-table">Стол по умолчанию</Label>
-                <Input
-                  id="settings-default-table"
-                  type="text"
-                  placeholder="будет назначен"
-                  value={defaultTableMessage}
-                  onChange={(e) => setDefaultTableMessage(e.target.value)}
-                />
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground">
+                {whatsappExpanded ? (
+                  <ChevronUp className="h-5 w-5" aria-hidden />
+                ) : (
+                  <ChevronDown className="h-5 w-5" aria-hidden />
+                )}
               </div>
             </div>
-          </CardContent>
+          </CardHeader>
+          {whatsappExpanded && (
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="settings-broadcast-webhook">Webhook рассылок</Label>
+                  <Input
+                    id="settings-broadcast-webhook"
+                    type="url"
+                    placeholder="https://n8n.example.com/webhook/broadcast"
+                    value={broadcastWebhookUrl}
+                    onChange={(e) => setBroadcastWebhookUrl(e.target.value)}
+                    className="font-mono text-sm"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="settings-booking-webhook">Webhook уведомлений о брони</Label>
+                  <Input
+                    id="settings-booking-webhook"
+                    type="url"
+                    placeholder="https://n8n.example.com/webhook/booking-created"
+                    value={bookingWebhookUrl}
+                    onChange={(e) => setBookingWebhookUrl(e.target.value)}
+                    className="font-mono text-sm"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="settings-restaurant-place">Место ресторана</Label>
+                  <Input
+                    id="settings-restaurant-place"
+                    type="text"
+                    placeholder="CHINOR Restaurant"
+                    value={restaurantPlace}
+                    onChange={(e) => setRestaurantPlace(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="settings-default-table">Стол по умолчанию</Label>
+                  <Input
+                    id="settings-default-table"
+                    type="text"
+                    placeholder="будет назначен"
+                    value={defaultTableMessage}
+                    onChange={(e) => setDefaultTableMessage(e.target.value)}
+                  />
+                </div>
+              </div>
+              <p className="mt-4 text-xs text-muted-foreground">
+                После изменений нажмите «Сохранить» вверху страницы — данные сохраняются в базу и не пропадут при обновлении.
+              </p>
+            </CardContent>
+          )}
         </Card>
 
         <Card>
