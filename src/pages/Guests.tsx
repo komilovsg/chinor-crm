@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { CalendarPlus, Crown, Download, Pencil, Plus, Search, UserCheck, UserPlus, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -57,6 +57,7 @@ export function Guests() {
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [addingVisit, setAddingVisit] = useState<number | null>(null)
+  const addingVisitRef = useRef<number | null>(null)
   const [excludeToggling, setExcludeToggling] = useState<number | null>(null)
 
   const toggleExcludeFromBroadcasts = useCallback(
@@ -188,6 +189,8 @@ export function Guests() {
   }
 
   const handleAddVisit = async (guestId: number) => {
+    if (addingVisitRef.current === guestId) return
+    addingVisitRef.current = guestId
     setAddingVisit(guestId)
     try {
       await addGuestVisit(guestId)
@@ -198,6 +201,7 @@ export function Guests() {
       setError(msg)
       toast.error(msg)
     } finally {
+      addingVisitRef.current = null
       setAddingVisit(null)
     }
   }
