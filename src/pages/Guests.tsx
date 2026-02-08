@@ -188,23 +188,28 @@ export function Guests() {
     }
   }
 
-  const handleAddVisit = async (guestId: number) => {
-    if (addingVisitRef.current === guestId) return
-    addingVisitRef.current = guestId
-    setAddingVisit(guestId)
-    try {
-      await addGuestVisit(guestId)
-      loadData()
-      toast.success('Визит добавлен')
-    } catch (err) {
-      const msg = getApiErrorMessage(err, 'Не удалось добавить визит')
-      setError(msg)
-      toast.error(msg)
-    } finally {
-      addingVisitRef.current = null
-      setAddingVisit(null)
-    }
-  }
+  const handleAddVisit = useCallback(
+    async (e: React.MouseEvent, guestId: number) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (addingVisitRef.current !== null) return
+      addingVisitRef.current = guestId
+      setAddingVisit(guestId)
+      try {
+        await addGuestVisit(guestId)
+        loadData()
+        toast.success('Визит добавлен')
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Не удалось добавить визит')
+        setError(msg)
+        toast.error(msg)
+      } finally {
+        addingVisitRef.current = null
+        setAddingVisit(null)
+      }
+    },
+    []
+  )
 
   const handleEditClick = useCallback((guest: Guest) => {
     setEditGuest(guest)
@@ -512,11 +517,12 @@ export function Guests() {
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button
+                        type="button"
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        onClick={() => handleAddVisit(guest.id)}
-                        disabled={addingVisit === guest.id}
+                        onClick={(e) => handleAddVisit(e, guest.id)}
+                        disabled={addingVisit !== null}
                         title="Добавить визит"
                       >
                         <CalendarPlus className="h-4 w-4" />
