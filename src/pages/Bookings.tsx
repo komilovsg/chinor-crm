@@ -229,17 +229,19 @@ export function Bookings() {
 
   return (
     <div className="w-full p-4 sm:p-6 space-y-6 animate-in fade-in duration-300">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Бронирования</h1>
-          <p className="text-muted-foreground">
-            Управление резервами столов.
-          </p>
+      <div className="sticky top-0 z-10 -mx-4 -mt-4 flex flex-col gap-4 bg-background px-4 pt-4 pb-4 sm:-mx-6 sm:px-6 sm:pt-6 sm:pb-4 border-b border-border">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Бронирования</h1>
+            <p className="text-muted-foreground">
+              Управление резервами столов.
+            </p>
+          </div>
+          <Button onClick={() => setNewBookingOpen(true)}>
+            <Calendar className="h-4 w-4 shrink-0" />
+            Новая бронь
+          </Button>
         </div>
-        <Button onClick={() => setNewBookingOpen(true)}>
-          <Calendar className="h-4 w-4 shrink-0" />
-          Новая бронь
-        </Button>
       </div>
 
       <ResponsiveModal

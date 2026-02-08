@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
+  BarChart3,
   Calendar,
   MessageCircle,
   Users,
@@ -13,17 +14,55 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
 import { getApiErrorMessage } from '@/api/client'
 import { toast } from '@/lib/toast'
-import { getDashboardStats } from '@/api/dashboard'
+import {
+  getDashboardStats,
+  getRecentActivity,
+  getUserActivityStats,
+} from '@/api/dashboard'
+import { useAuth } from '@/hooks/useAuth'
 import { DashboardSkeleton } from '@/components/skeletons'
-import type { DashboardStats } from '@/types'
+import type {
+  DashboardStats,
+  RecentActivityItem,
+  UserActivityStats,
+} from '@/types'
 
-/** Дашборд: четыре карточки метрик, блоки «Динамика бронирований» и «Сегменты гостей» (заглушки). */
+function formatActivityDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch {
+    return iso
+  }
+}
+
+/** Дашборд: карточки метрик, заглушки графиков, таблица последних изменений и активность сотрудников (админ). */
 export function Dashboard() {
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([])
+  const [userStats, setUserStats] = useState<UserActivityStats[]>([])
+  const [activityLoading, setActivityLoading] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -46,6 +85,21 @@ export function Dashboard() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!isAdmin) return
+    setActivityLoading(true)
+    Promise.all([getRecentActivity(50), getUserActivityStats()])
+      .then(([activity, statsList]) => {
+        setRecentActivity(activity)
+        setUserStats(statsList)
+      })
+      .catch(() => {
+        setRecentActivity([])
+        setUserStats([])
+      })
+      .finally(() => setActivityLoading(false))
+  }, [isAdmin])
+
   if (loading) {
     return <DashboardSkeleton />
   }
@@ -60,11 +114,13 @@ export function Dashboard() {
 
   return (
     <div className="w-full p-4 sm:p-6 space-y-6 animate-in fade-in duration-300">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Привет, Админ! 👋</h1>
-        <p className="text-muted-foreground">
-          Обзор активности в CHINOR сегодня.
-        </p>
+      <div className="sticky top-0 z-10 -mx-4 -mt-4 flex flex-col gap-4 bg-background px-4 pt-4 pb-4 sm:-mx-6 sm:px-6 sm:pt-6 sm:pb-4 border-b border-border">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Привет, Админ! 👋</h1>
+          <p className="text-muted-foreground">
+            Обзор активности в CHINOR сегодня.
+          </p>
+        </div>
       </div>
 
       <div className="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -150,6 +206,103 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {isAdmin && (
+        <>
+          <Card>
+            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle>Последние изменения</CardTitle>
+                <CardDescription>
+                  Брони, новые гости и смены статусов.
+                </CardDescription>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => navigate('/graphs')}>
+                <BarChart3 className="h-4 w-4 shrink-0" />
+                График
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {activityLoading ? (
+                <p className="py-4 text-sm text-muted-foreground">Загрузка...</p>
+              ) : recentActivity.length === 0 ? (
+                <p className="py-4 text-sm text-muted-foreground">Пока нет записей</p>
+              ) : (
+                <div className="overflow-x-auto rounded-md border border-border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Дата</TableHead>
+                        <TableHead>Действие</TableHead>
+                        <TableHead>Пользователь</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {recentActivity.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="whitespace-nowrap text-muted-foreground">
+                            {formatActivityDate(item.created_at)}
+                          </TableCell>
+                          <TableCell>{item.summary}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {item.user_display_name}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Активность сотрудников</CardTitle>
+              <CardDescription>
+                Кто сколько броней создал, гостей добавил и сменил статусов.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {activityLoading ? (
+                <p className="py-4 text-sm text-muted-foreground">Загрузка...</p>
+              ) : userStats.length === 0 ? (
+                <p className="py-4 text-sm text-muted-foreground">Нет данных</p>
+              ) : (
+                <div className="overflow-x-auto rounded-md border border-border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Пользователь</TableHead>
+                        <TableHead>Роль</TableHead>
+                        <TableHead className="text-right">Броней создано</TableHead>
+                        <TableHead className="text-right">Гостей добавлено</TableHead>
+                        <TableHead className="text-right">Смен статусов</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {userStats.map((u) => (
+                        <TableRow key={u.user_id}>
+                          <TableCell className="font-medium">
+                            {u.display_name}
+                            <span className="ml-1 text-xs text-muted-foreground">
+                              ({u.email})
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{u.role}</TableCell>
+                          <TableCell className="text-right">{u.bookings_created}</TableCell>
+                          <TableCell className="text-right">{u.guests_created}</TableCell>
+                          <TableCell className="text-right">{u.status_changes}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   )
 }

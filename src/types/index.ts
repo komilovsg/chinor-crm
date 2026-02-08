@@ -16,6 +16,8 @@ export interface Guest {
   visits_count: number
   last_visit_at: string | null
   created_at: string
+  /** Исключить из рассылок (галочка в разделе Гости) */
+  exclude_from_broadcasts?: boolean
 }
 
 /** Booking (API contract) */
@@ -37,6 +39,36 @@ export interface DashboardStats {
   todayArrivals: number
   guestCount: number
   noShowRate: number
+}
+
+/** Запись журнала активности (только админ) */
+export interface RecentActivityItem {
+  id: number
+  created_at: string
+  action_type: string
+  entity_type: string
+  entity_id: number
+  details: string | null
+  user_display_name: string
+  user_email: string
+  summary: string
+}
+
+/** Сводка по пользователю: брони созданы, гости добавлены, смены статусов */
+export interface UserActivityStats {
+  user_id: number
+  display_name: string
+  email: string
+  role: string
+  bookings_created: number
+  guests_created: number
+  status_changes: number
+}
+
+/** Визиты по дате для календаря */
+export interface VisitsByDateItem {
+  date: string
+  count: number
 }
 
 /** Campaign (API contract) */

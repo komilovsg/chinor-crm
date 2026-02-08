@@ -173,9 +173,11 @@ export function Settings() {
   if (!isAdmin) {
     return (
       <div className="w-full p-4 sm:p-6 space-y-6 animate-in fade-in duration-300">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Настройки</h1>
-          <p className="text-muted-foreground">Тема и системные параметры.</p>
+        <div className="sticky top-0 z-10 -mx-4 -mt-4 flex flex-col gap-4 bg-background px-4 pt-4 pb-4 sm:-mx-6 sm:px-6 sm:pt-6 sm:pb-4 border-b border-border">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Настройки</h1>
+            <p className="text-muted-foreground">Тема и системные параметры.</p>
+          </div>
         </div>
         <Card>
           <CardHeader>

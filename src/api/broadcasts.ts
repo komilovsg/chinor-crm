@@ -6,7 +6,6 @@ export interface CreateBroadcastRequest {
   segment: string
   messageText: string
   imageUrl?: string
-  guestIds?: number[]
 }
 
 /** Получить статистику рассылок. */

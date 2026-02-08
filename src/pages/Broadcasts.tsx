@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useLocation } from 'react-router-dom'
 import { Check, Send, CheckCircle2, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -37,13 +36,8 @@ const SEGMENT_OPTIONS: { value: string; label: string }[] = [
   { value: 'Новички', label: 'Новички' },
 ]
 
-const GUESTS_SELECTION_KEY = 'broadcast_selected_guest_ids'
-
-/** Страница рассылок: карточки статистики, форма новой рассылки, история. */
+/** Страница рассылок: карточки статистики, форма новой рассылки. Гости с галочкой «исключить из рассылок» в разделе Гости не получают рассылку. */
 export function Broadcasts() {
-  const location = useLocation()
-  const stateGuestIds = (location.state as { selectedGuestIds?: number[] } | null)?.selectedGuestIds
-
   const [stats, setStats] = useState<BroadcastStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -57,21 +51,6 @@ export function Broadcasts() {
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState(false)
-  const [selectedGuestIds, setSelectedGuestIds] = useState<number[]>(() => {
-    if (stateGuestIds && stateGuestIds.length > 0) return stateGuestIds
-    try {
-      const saved = localStorage.getItem(GUESTS_SELECTION_KEY)
-      if (saved) {
-        const ids = JSON.parse(saved) as number[]
-        return Array.isArray(ids) ? ids : []
-      }
-    } catch {
-      // ignore
-    }
-    return []
-  })
-
-  const useSelectedGuests = selectedGuestIds.length > 0
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -91,18 +70,6 @@ export function Broadcasts() {
   useEffect(() => {
     loadData()
   }, [loadData])
-
-  useEffect(() => {
-    if (stateGuestIds && stateGuestIds.length > 0) {
-      setSelectedGuestIds(stateGuestIds)
-      try {
-        localStorage.setItem(GUESTS_SELECTION_KEY, JSON.stringify(stateGuestIds))
-      } catch {
-        // ignore
-      }
-      window.history.replaceState({}, '', location.pathname)
-    }
-  }, [stateGuestIds, location.pathname])
 
   useEffect(() => {
     try {
@@ -179,21 +146,14 @@ export function Broadcasts() {
     setSubmitting(true)
     try {
       await createBroadcast({
-        segment: useSelectedGuests ? 'selected' : segment,
+        segment,
         messageText: messageText.trim(),
         ...(urlTrimmed ? { imageUrl: urlTrimmed } : {}),
-        ...(useSelectedGuests ? { guestIds: selectedGuestIds } : {}),
       })
       setSubmitSuccess(true)
       setMessageText('')
       setImageUrl('')
       setImageFileName('')
-      setSelectedGuestIds([])
-      try {
-        localStorage.removeItem(GUESTS_SELECTION_KEY)
-      } catch {
-        // ignore
-      }
       saveImageDraftToStorage('')
       if (fileInputRef.current) fileInputRef.current.value = ''
       loadData()
@@ -213,11 +173,13 @@ export function Broadcasts() {
 
   return (
     <div className="w-full p-4 sm:p-6 space-y-6 animate-in fade-in duration-300">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Рассылки</h1>
-        <p className="text-muted-foreground">
-          Рассылка сообщений гостям по сегментам.
-        </p>
+      <div className="sticky top-0 z-10 -mx-4 -mt-4 flex flex-col gap-4 bg-background px-4 pt-4 pb-4 sm:-mx-6 sm:px-6 sm:pt-6 sm:pb-4 border-b border-border">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Рассылки</h1>
+          <p className="text-muted-foreground">
+            Рассылка сообщений гостям по сегментам.
+          </p>
+        </div>
       </div>
 
       {error && (
@@ -278,42 +240,21 @@ export function Broadcasts() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="broadcast-segment">Целевая аудитория</Label>
-              {useSelectedGuests ? (
-                <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
-                  <span className="text-sm font-medium">
-                    Выбранные гости: <span className="text-primary">{selectedGuestIds.length}</span>
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="ml-auto h-7 text-xs"
-                    onClick={() => {
-                      setSelectedGuestIds([])
-                      try {
-                        localStorage.removeItem(GUESTS_SELECTION_KEY)
-                      } catch {
-                        // ignore
-                      }
-                    }}
-                  >
-                    Отменить выбор
-                  </Button>
-                </div>
-              ) : (
-                <Select value={segment} onValueChange={setSegment}>
-                  <SelectTrigger id="broadcast-segment">
-                    <SelectValue placeholder="Выберите сегмент" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SEGMENT_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+              <Select value={segment} onValueChange={setSegment}>
+                <SelectTrigger id="broadcast-segment">
+                  <SelectValue placeholder="Выберите сегмент" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SEGMENT_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Гости с галочкой «исключить из рассылок» в разделе Гости не получат сообщение.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="broadcast-image">Изображение (опционально)</Label>

@@ -8,6 +8,7 @@ import { Guests } from '@/pages/Guests'
 import { Broadcasts } from '@/pages/Broadcasts'
 import { Settings } from '@/pages/Settings'
 import { UsersPage } from '@/pages/UsersPage'
+import { Graphs } from '@/pages/Graphs'
 
 /** Защищённый маршрут: при отсутствии JWT редирект на /login; иначе MainLayout с Outlet. */
 function ProtectedRoute() {
@@ -43,6 +44,14 @@ export function AppRoutes() {
           element={
             <AdminRoute>
               <UsersPage />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="graphs"
+          element={
+            <AdminRoute>
+              <Graphs />
             </AdminRoute>
           }
         />

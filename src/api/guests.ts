@@ -19,6 +19,7 @@ export interface UpdateGuestRequest {
   phone?: string
   email?: string
   segment?: string
+  exclude_from_broadcasts?: boolean
 }
 
 export interface GuestStats {

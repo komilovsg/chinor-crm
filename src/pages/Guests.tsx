@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { CalendarPlus, Crown, Download, Pencil, Plus, Search, Send, UserCheck, UserPlus, Users } from 'lucide-react'
+import { CalendarPlus, Crown, Download, Pencil, Plus, Search, UserCheck, UserPlus, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -36,10 +35,9 @@ import { GuestsSkeleton } from '@/components/skeletons'
 import type { Guest } from '@/types'
 
 
-/** Страница гостей: карточки метрик, поиск, таблица, экспорт CSV (admin), добавление и редактирование. */
+/** Страница гостей: карточки метрик, поиск, таблица, экспорт CSV (admin), галочка «исключить из рассылок». */
 export function Guests() {
   const { user } = useAuth()
-  const navigate = useNavigate()
   const isAdmin = user?.role === 'admin'
   const [search, setSearch] = useState('')
   const [stats, setStats] = useState<GuestStats | null>(null)
@@ -59,61 +57,53 @@ export function Guests() {
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [addingVisit, setAddingVisit] = useState<number | null>(null)
-  const [selectedGuestIds, setSelectedGuestIds] = useState<Set<number>>(new Set())
+  const [excludeToggling, setExcludeToggling] = useState<number | null>(null)
 
-  const GUESTS_SELECTION_KEY = 'broadcast_selected_guest_ids'
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(GUESTS_SELECTION_KEY)
-      if (saved) {
-        const ids = JSON.parse(saved) as number[]
-        if (Array.isArray(ids)) setSelectedGuestIds(new Set(ids))
+  const toggleExcludeFromBroadcasts = useCallback(
+    async (guest: Guest) => {
+      const next = !(guest.exclude_from_broadcasts ?? false)
+      setExcludeToggling(guest.id)
+      try {
+        const updated = await updateGuest(guest.id, { exclude_from_broadcasts: next })
+        setData((prev) => ({
+          ...prev,
+          items: prev.items.map((g) => (g.id === updated.id ? { ...g, exclude_from_broadcasts: updated.exclude_from_broadcasts } : g)),
+        }))
+        toast.success(next ? 'Гость исключён из рассылок' : 'Гость снова получает рассылки')
+      } catch (err) {
+        toast.error(getApiErrorMessage(err, 'Не удалось обновить'))
+      } finally {
+        setExcludeToggling(null)
       }
-    } catch {
-      // ignore
-    }
-  }, [])
-
-  const saveSelectionToStorage = useCallback((ids: Set<number>) => {
-    try {
-      if (ids.size > 0) {
-        localStorage.setItem(GUESTS_SELECTION_KEY, JSON.stringify([...ids]))
-      } else {
-        localStorage.removeItem(GUESTS_SELECTION_KEY)
-      }
-    } catch {
-      // ignore
-    }
-  }, [])
-
-  const toggleGuestSelection = useCallback(
-    (id: number) => {
-      setSelectedGuestIds((prev) => {
-        const next = new Set(prev)
-        if (next.has(id)) next.delete(id)
-        else next.add(id)
-        saveSelectionToStorage(next)
-        return next
-      })
     },
-    [saveSelectionToStorage]
+    []
   )
 
-  const toggleSelectAll = useCallback(() => {
-    const ids = data.items.map((g) => g.id)
-    const allSelected = ids.length > 0 && ids.every((id) => selectedGuestIds.has(id))
-    setSelectedGuestIds((_prev) => {
-      const next = allSelected ? new Set<number>() : new Set(ids)
-      saveSelectionToStorage(next)
-      return next
-    })
-  }, [data.items, selectedGuestIds, saveSelectionToStorage])
+  const toggleExcludeAllVisible = useCallback(async () => {
+    const excluded = data.items.filter((g) => g.exclude_from_broadcasts).length
+    const allExcluded = data.items.length > 0 && excluded === data.items.length
+    const next = !allExcluded
+    setExcludeToggling(-1)
+    try {
+      await Promise.all(
+        data.items.map((g) => updateGuest(g.id, { exclude_from_broadcasts: next }))
+      )
+      setData((prev) => ({
+        ...prev,
+        items: prev.items.map((g) => ({ ...g, exclude_from_broadcasts: next })),
+      }))
+      toast.success(next ? 'Все отмечены как исключённые из рассылок' : 'Снято исключение у всех')
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Не удалось обновить'))
+    } finally {
+      setExcludeToggling(null)
+    }
+  }, [data.items])
 
-  const selectAllChecked =
-    data.items.length > 0 && data.items.every((g) => selectedGuestIds.has(g.id))
-  const selectAllIndeterminate =
-    data.items.length > 0 && !selectAllChecked && data.items.some((g) => selectedGuestIds.has(g.id))
+  const excludeAllChecked =
+    data.items.length > 0 && data.items.every((g) => g.exclude_from_broadcasts)
+  const excludeAllIndeterminate =
+    data.items.length > 0 && !excludeAllChecked && data.items.some((g) => g.exclude_from_broadcasts)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -254,32 +244,34 @@ export function Guests() {
 
   return (
     <div className="w-full p-4 sm:p-6 space-y-6 animate-in fade-in duration-300">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Гости</h1>
-          <p className="text-muted-foreground">
-            База гостей и сегменты.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            className="min-w-[160px]"
-            onClick={() => { setAddModalOpen(true); resetAddForm(); }}
-          >
-            <Plus className="h-4 w-4 shrink-0" />
-            Добавить гостя
-          </Button>
-          {isAdmin && (
+      <div className="sticky top-0 z-10 -mx-4 -mt-4 flex flex-col gap-4 bg-background px-4 pt-4 pb-4 sm:-mx-6 sm:px-6 sm:pt-6 sm:pb-4 border-b border-border">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Гости</h1>
+            <p className="text-muted-foreground">
+              База гостей и сегменты.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
             <Button
-              variant="outline"
               className="min-w-[160px]"
-              onClick={handleExport}
-              disabled={exporting}
+              onClick={() => { setAddModalOpen(true); resetAddForm(); }}
             >
-              <Download className="h-4 w-4 shrink-0" />
-              {exporting ? 'Экспорт...' : 'Экспорт CSV'}
+              <Plus className="h-4 w-4 shrink-0" />
+              Добавить гостя
             </Button>
-          )}
+            {isAdmin && (
+              <Button
+                variant="outline"
+                className="min-w-[160px]"
+                onClick={handleExport}
+                disabled={exporting}
+              >
+                <Download className="h-4 w-4 shrink-0" />
+                {exporting ? 'Экспорт...' : 'Экспорт CSV'}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -455,43 +447,16 @@ export function Guests() {
         </p>
       )}
 
-      {selectedGuestIds.size > 0 && (
-        <div className="flex flex-col gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-          <p className="text-sm font-medium text-foreground">
-            Выбрано гостей: <span className="text-primary">{selectedGuestIds.size}</span>
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSelectedGuestIds(new Set())
-                saveSelectionToStorage(new Set())
-              }}
-            >
-              Снять выбор
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => navigate('/broadcasts', { state: { selectedGuestIds: [...selectedGuestIds] } })}
-            >
-              <Send className="h-4 w-4 shrink-0" />
-              Рассылка выбранным
-            </Button>
-          </div>
-        </div>
-      )}
-
       <div className="w-full overflow-x-auto rounded-xl border border-border shadow-sm transition-shadow duration-200 hover:shadow-md">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-12 px-4">
+              <TableHead className="w-12 px-4" title="Галочка — не отправлять рассылку этому гостю при выборе сегмента">
                 <Checkbox
-                  checked={selectAllIndeterminate ? 'indeterminate' : selectAllChecked}
-                  onCheckedChange={toggleSelectAll}
-                  disabled={data.items.length === 0}
-                  aria-label="Выбрать всех"
+                  checked={excludeAllIndeterminate ? 'indeterminate' : excludeAllChecked}
+                  onCheckedChange={toggleExcludeAllVisible}
+                  disabled={data.items.length === 0 || excludeToggling === -1}
+                  aria-label="Исключить всех из рассылок"
                 />
               </TableHead>
               <TableHead>ИМЯ ГОСТЯ</TableHead>
@@ -519,13 +484,14 @@ export function Guests() {
               data.items.map((guest) => (
                 <TableRow
                   key={guest.id}
-                  className={selectedGuestIds.has(guest.id) ? 'bg-primary/5' : undefined}
+                  className={guest.exclude_from_broadcasts ? 'bg-muted/50' : undefined}
                 >
                   <TableCell className="w-12 px-4">
                     <Checkbox
-                      checked={selectedGuestIds.has(guest.id)}
-                      onCheckedChange={() => toggleGuestSelection(guest.id)}
-                      aria-label={`Выбрать ${guest.name ?? guest.phone}`}
+                      checked={guest.exclude_from_broadcasts ?? false}
+                      onCheckedChange={() => toggleExcludeFromBroadcasts(guest)}
+                      disabled={excludeToggling !== null}
+                      aria-label={guest.exclude_from_broadcasts ? `Включить в рассылки: ${guest.name ?? guest.phone}` : `Исключить из рассылок: ${guest.name ?? guest.phone}`}
                     />
                   </TableCell>
                   <TableCell className="font-medium">
