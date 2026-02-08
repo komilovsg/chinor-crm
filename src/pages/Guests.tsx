@@ -103,7 +103,7 @@ export function Guests() {
   const toggleSelectAll = useCallback(() => {
     const ids = data.items.map((g) => g.id)
     const allSelected = ids.length > 0 && ids.every((id) => selectedGuestIds.has(id))
-    setSelectedGuestIds((prev) => {
+    setSelectedGuestIds((_prev) => {
       const next = allSelected ? new Set<number>() : new Set(ids)
       saveSelectionToStorage(next)
       return next
