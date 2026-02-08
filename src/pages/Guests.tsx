@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { CalendarPlus, Crown, Download, Pencil, Plus, Search, UserCheck, UserPlus, Users } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { CalendarPlus, Crown, Download, Pencil, Plus, Search, Send, UserCheck, UserPlus, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -17,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Checkbox } from '@/components/ui/checkbox'
 import { getApiErrorMessage } from '@/api/client'
 import { toast } from '@/lib/toast'
 import { useAuth } from '@/hooks/useAuth'
@@ -37,6 +39,7 @@ import type { Guest } from '@/types'
 /** Страница гостей: карточки метрик, поиск, таблица, экспорт CSV (admin), добавление и редактирование. */
 export function Guests() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const isAdmin = user?.role === 'admin'
   const [search, setSearch] = useState('')
   const [stats, setStats] = useState<GuestStats | null>(null)
@@ -56,6 +59,61 @@ export function Guests() {
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [addingVisit, setAddingVisit] = useState<number | null>(null)
+  const [selectedGuestIds, setSelectedGuestIds] = useState<Set<number>>(new Set())
+
+  const GUESTS_SELECTION_KEY = 'broadcast_selected_guest_ids'
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(GUESTS_SELECTION_KEY)
+      if (saved) {
+        const ids = JSON.parse(saved) as number[]
+        if (Array.isArray(ids)) setSelectedGuestIds(new Set(ids))
+      }
+    } catch {
+      // ignore
+    }
+  }, [])
+
+  const saveSelectionToStorage = useCallback((ids: Set<number>) => {
+    try {
+      if (ids.size > 0) {
+        localStorage.setItem(GUESTS_SELECTION_KEY, JSON.stringify([...ids]))
+      } else {
+        localStorage.removeItem(GUESTS_SELECTION_KEY)
+      }
+    } catch {
+      // ignore
+    }
+  }, [])
+
+  const toggleGuestSelection = useCallback(
+    (id: number) => {
+      setSelectedGuestIds((prev) => {
+        const next = new Set(prev)
+        if (next.has(id)) next.delete(id)
+        else next.add(id)
+        saveSelectionToStorage(next)
+        return next
+      })
+    },
+    [saveSelectionToStorage]
+  )
+
+  const toggleSelectAll = useCallback(() => {
+    const ids = data.items.map((g) => g.id)
+    const allSelected = ids.length > 0 && ids.every((id) => selectedGuestIds.has(id))
+    setSelectedGuestIds((prev) => {
+      const next = allSelected ? new Set<number>() : new Set(ids)
+      saveSelectionToStorage(next)
+      return next
+    })
+  }, [data.items, selectedGuestIds, saveSelectionToStorage])
+
+  const selectAllChecked =
+    data.items.length > 0 && data.items.every((g) => selectedGuestIds.has(g.id))
+  const selectAllIndeterminate =
+    data.items.length > 0 && !selectAllChecked && data.items.some((g) => selectedGuestIds.has(g.id))
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -397,10 +455,45 @@ export function Guests() {
         </p>
       )}
 
+      {selectedGuestIds.size > 0 && (
+        <div className="flex flex-col gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <p className="text-sm font-medium text-foreground">
+            Выбрано гостей: <span className="text-primary">{selectedGuestIds.size}</span>
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSelectedGuestIds(new Set())
+                saveSelectionToStorage(new Set())
+              }}
+            >
+              Снять выбор
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => navigate('/broadcasts', { state: { selectedGuestIds: [...selectedGuestIds] } })}
+            >
+              <Send className="h-4 w-4 shrink-0" />
+              Рассылка выбранным
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="w-full overflow-x-auto rounded-xl border border-border shadow-sm transition-shadow duration-200 hover:shadow-md">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12 px-4">
+                <Checkbox
+                  checked={selectAllIndeterminate ? 'indeterminate' : selectAllChecked}
+                  onCheckedChange={toggleSelectAll}
+                  disabled={data.items.length === 0}
+                  aria-label="Выбрать всех"
+                />
+              </TableHead>
               <TableHead>ИМЯ ГОСТЯ</TableHead>
               <TableHead>ТЕЛЕФОН</TableHead>
               <TableHead>СЕГМЕНТ</TableHead>
@@ -412,19 +505,29 @@ export function Guests() {
           <TableBody>
             {loading && data.items.length > 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                   Обновление...
                 </TableCell>
               </TableRow>
             ) : data.items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                   Нет гостей
                 </TableCell>
               </TableRow>
             ) : (
               data.items.map((guest) => (
-                <TableRow key={guest.id}>
+                <TableRow
+                  key={guest.id}
+                  className={selectedGuestIds.has(guest.id) ? 'bg-primary/5' : undefined}
+                >
+                  <TableCell className="w-12 px-4">
+                    <Checkbox
+                      checked={selectedGuestIds.has(guest.id)}
+                      onCheckedChange={() => toggleGuestSelection(guest.id)}
+                      aria-label={`Выбрать ${guest.name ?? guest.phone}`}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">
                     {guest.name ?? '—'}
                   </TableCell>

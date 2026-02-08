@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
-import { AlertCircle, Send, CheckCircle2, XCircle } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
+import { AlertCircle, Check, Send, CheckCircle2, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -8,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -24,8 +24,12 @@ import {
   createBroadcast,
   getBroadcastStats,
   getBroadcastHistory,
+  uploadBroadcastImage,
 } from '@/api/broadcasts'
 import type { BroadcastHistoryItem, BroadcastStats } from '@/types'
+
+const BROADCAST_DRAFT_IMAGE_KEY = 'broadcast_draft_image_url'
+const BROADCAST_DRAFT_IMAGE_FILENAME_KEY = 'broadcast_draft_image_filename'
 
 const SEGMENT_OPTIONS: { value: string; label: string }[] = [
   { value: 'all', label: 'Все гости' },
@@ -48,19 +52,42 @@ function formatDate(iso: string): string {
   }
 }
 
+const GUESTS_SELECTION_KEY = 'broadcast_selected_guest_ids'
+
 /** Страница рассылок: карточки статистики, форма новой рассылки, история. */
 export function Broadcasts() {
+  const location = useLocation()
+  const stateGuestIds = (location.state as { selectedGuestIds?: number[] } | null)?.selectedGuestIds
+
   const [stats, setStats] = useState<BroadcastStats | null>(null)
   const [history, setHistory] = useState<BroadcastHistoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [segment, setSegment] = useState<string>('all')
   const [messageText, setMessageText] = useState('')
   const [imageUrl, setImageUrl] = useState('')
+  const [imageFileName, setImageFileName] = useState('')
+  const [imageUploading, setImageUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState(false)
+  const [selectedGuestIds, setSelectedGuestIds] = useState<number[]>(() => {
+    if (stateGuestIds && stateGuestIds.length > 0) return stateGuestIds
+    try {
+      const saved = localStorage.getItem(GUESTS_SELECTION_KEY)
+      if (saved) {
+        const ids = JSON.parse(saved) as number[]
+        return Array.isArray(ids) ? ids : []
+      }
+    } catch {
+      // ignore
+    }
+    return []
+  })
+
+  const useSelectedGuests = selectedGuestIds.length > 0
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -85,6 +112,81 @@ export function Broadcasts() {
     loadData()
   }, [loadData])
 
+  useEffect(() => {
+    if (stateGuestIds && stateGuestIds.length > 0) {
+      setSelectedGuestIds(stateGuestIds)
+      try {
+        localStorage.setItem(GUESTS_SELECTION_KEY, JSON.stringify(stateGuestIds))
+      } catch {
+        // ignore
+      }
+      window.history.replaceState({}, '', location.pathname)
+    }
+  }, [stateGuestIds, location.pathname])
+
+  useEffect(() => {
+    try {
+      const savedUrl = localStorage.getItem(BROADCAST_DRAFT_IMAGE_KEY)
+      const savedName = localStorage.getItem(BROADCAST_DRAFT_IMAGE_FILENAME_KEY)
+      if (savedUrl && savedUrl.startsWith('http')) {
+        setImageUrl(savedUrl)
+        if (savedName) setImageFileName(savedName)
+      }
+    } catch {
+      // ignore
+    }
+  }, [])
+
+  const saveImageDraftToStorage = useCallback((url: string, filename?: string) => {
+    try {
+      if (url) {
+        localStorage.setItem(BROADCAST_DRAFT_IMAGE_KEY, url)
+        if (filename) localStorage.setItem(BROADCAST_DRAFT_IMAGE_FILENAME_KEY, filename)
+      } else {
+        localStorage.removeItem(BROADCAST_DRAFT_IMAGE_KEY)
+        localStorage.removeItem(BROADCAST_DRAFT_IMAGE_FILENAME_KEY)
+      }
+    } catch {
+      // ignore
+    }
+  }, [])
+
+  const handleResetImage = useCallback(() => {
+    setImageUrl('')
+    setImageFileName('')
+    saveImageDraftToStorage('')
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }, [saveImageDraftToStorage])
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const ext = file.name.toLowerCase().split('.').pop()
+    if (!['jpg', 'jpeg', 'png'].includes(ext || '')) {
+      toast.error('Только JPEG и PNG')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Файл не более 5 MB')
+      return
+    }
+    setImageUploading(true)
+    setFormError(null)
+    try {
+      const { url } = await uploadBroadcastImage(file)
+      setImageUrl(url)
+      setImageFileName(file.name)
+      saveImageDraftToStorage(url, file.name)
+      toast.success('Изображение загружено')
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Ошибка загрузки изображения')
+      toast.error(msg)
+    } finally {
+      setImageUploading(false)
+      e.target.value = ''
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!messageText.trim()) {
@@ -92,26 +194,28 @@ export function Broadcasts() {
       return
     }
     const urlTrimmed = imageUrl.trim()
-    if (urlTrimmed) {
-      try {
-        new URL(urlTrimmed)
-      } catch {
-        setFormError('Некорректный URL изображения')
-        return
-      }
-    }
     setFormError(null)
     setSubmitSuccess(false)
     setSubmitting(true)
     try {
       await createBroadcast({
-        segment,
+        segment: useSelectedGuests ? 'selected' : segment,
         messageText: messageText.trim(),
         ...(urlTrimmed ? { imageUrl: urlTrimmed } : {}),
+        ...(useSelectedGuests ? { guestIds: selectedGuestIds } : {}),
       })
       setSubmitSuccess(true)
       setMessageText('')
       setImageUrl('')
+      setImageFileName('')
+      setSelectedGuestIds([])
+      try {
+        localStorage.removeItem(GUESTS_SELECTION_KEY)
+      } catch {
+        // ignore
+      }
+      saveImageDraftToStorage('')
+      if (fileInputRef.current) fileInputRef.current.value = ''
       loadData()
       toast.success('Рассылка создана и добавлена в очередь')
     } catch (err) {
@@ -194,32 +298,92 @@ export function Broadcasts() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="broadcast-segment">Целевая аудитория</Label>
-              <Select value={segment} onValueChange={setSegment}>
-                <SelectTrigger id="broadcast-segment">
-                  <SelectValue placeholder="Выберите сегмент" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SEGMENT_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {useSelectedGuests ? (
+                <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
+                  <span className="text-sm font-medium">
+                    Выбранные гости: <span className="text-primary">{selectedGuestIds.length}</span>
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="ml-auto h-7 text-xs"
+                    onClick={() => {
+                      setSelectedGuestIds([])
+                      try {
+                        localStorage.removeItem(GUESTS_SELECTION_KEY)
+                      } catch {
+                        // ignore
+                      }
+                    }}
+                  >
+                    Отменить выбор
+                  </Button>
+                </div>
+              ) : (
+                <Select value={segment} onValueChange={setSegment}>
+                  <SelectTrigger id="broadcast-segment">
+                    <SelectValue placeholder="Выберите сегмент" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SEGMENT_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="broadcast-image">URL изображения (опционально)</Label>
-              <Input
-                id="broadcast-image"
-                type="url"
-                placeholder="https://example.com/promo.jpg"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                className="font-mono text-sm"
-              />
-              <p className="text-xs text-muted-foreground">
-                JPEG или PNG, до 5 MB. Публичный URL.
-              </p>
+              <Label htmlFor="broadcast-image">Изображение (опционально)</Label>
+              <div className="flex flex-col gap-2">
+                <input
+                  ref={fileInputRef}
+                  id="broadcast-image"
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  onChange={handleImageChange}
+                  disabled={imageUploading}
+                  className="sr-only"
+                  tabIndex={-1}
+                  aria-hidden
+                />
+                <div className="relative flex w-full items-center rounded-md border border-input bg-background px-3 py-2 pr-9 text-sm text-muted-foreground">
+                  <span className="min-w-0 flex-1 truncate">
+                    {imageUrl ? (imageFileName || 'Изображение загружено') : 'Файл не выбран'}
+                  </span>
+                  {imageUrl && (
+                    <Check className="absolute right-3 h-4 w-4 shrink-0 text-emerald-500" />
+                  )}
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={imageUploading}
+                    className="w-full sm:w-auto"
+                  >
+                    {imageUploading ? 'Загрузка...' : 'Загрузить файл'}
+                  </Button>
+                  {imageUrl && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResetImage}
+                      className="w-full sm:w-auto"
+                    >
+                      Сбросить
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  JPEG или PNG, до 5 MB. Сохраняется до отправки (при перезагрузке страницы не теряется).
+                </p>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="broadcast-message">Текст сообщения</Label>
