@@ -4,14 +4,14 @@ import type { CrmUser } from '@/types'
 export interface CreateUserRequest {
   email: string
   password: string
-  role: 'admin' | 'hostess_1' | 'hostess_2'
+  role: 'admin' | 'hostess'
   display_name: string
 }
 
 export interface UpdateUserRequest {
   email?: string
   password?: string
-  role?: 'admin' | 'hostess_1' | 'hostess_2'
+  role?: 'admin' | 'hostess'
   display_name?: string
 }
 

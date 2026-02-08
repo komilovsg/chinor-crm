@@ -32,8 +32,9 @@ import type { CrmUser } from '@/types'
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Администратор',
-  hostess_1: 'Хостес 1',
-  hostess_2: 'Хостес 2',
+  hostess: 'Хостес',
+  hostess_1: 'Хостес', // обратная совместимость до миграции
+  hostess_2: 'Хостес',
 }
 
 /** Страница управления пользователями. Доступ: только admin. */
@@ -47,7 +48,7 @@ export function UsersPage() {
   const [editUser, setEditUser] = useState<CrmUser | null>(null)
   const [formEmail, setFormEmail] = useState('')
   const [formPassword, setFormPassword] = useState('')
-  const [formRole, setFormRole] = useState<'admin' | 'hostess_1' | 'hostess_2'>('hostess_1')
+  const [formRole, setFormRole] = useState<'admin' | 'hostess'>('hostess')
   const [formDisplayName, setFormDisplayName] = useState('')
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -74,7 +75,7 @@ export function UsersPage() {
   const resetAddForm = () => {
     setFormEmail('')
     setFormPassword('')
-    setFormRole('hostess_1')
+    setFormRole('hostess')
     setFormDisplayName('')
     setFormError(null)
   }
@@ -83,7 +84,7 @@ export function UsersPage() {
     setEditUser(null)
     setFormEmail('')
     setFormPassword('')
-    setFormRole('hostess_1')
+    setFormRole('hostess')
     setFormDisplayName('')
     setFormError(null)
   }
@@ -125,7 +126,7 @@ export function UsersPage() {
     setEditUser(user)
     setFormEmail(user.email)
     setFormPassword('')
-    setFormRole(user.role as 'admin' | 'hostess_1' | 'hostess_2')
+    setFormRole((user.role === 'hostess_1' || user.role === 'hostess_2' ? 'hostess' : user.role) as 'admin' | 'hostess')
     setFormDisplayName(user.display_name)
     setFormError(null)
     setEditModalOpen(true)
@@ -308,12 +309,11 @@ export function UsersPage() {
             <select
               id="add-role"
               value={formRole}
-              onChange={(e) => setFormRole(e.target.value as 'admin' | 'hostess_1' | 'hostess_2')}
+              onChange={(e) => setFormRole(e.target.value as 'admin' | 'hostess')}
               className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
             >
               <option value="admin">Администратор</option>
-              <option value="hostess_1">Хостес 1</option>
-              <option value="hostess_2">Хостес 2</option>
+              <option value="hostess">Хостес</option>
             </select>
           </div>
           <div className="space-y-2">
@@ -378,12 +378,11 @@ export function UsersPage() {
             <select
               id="edit-role"
               value={formRole}
-              onChange={(e) => setFormRole(e.target.value as 'admin' | 'hostess_1' | 'hostess_2')}
+              onChange={(e) => setFormRole(e.target.value as 'admin' | 'hostess')}
               className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
             >
               <option value="admin">Администратор</option>
-              <option value="hostess_1">Хостес 1</option>
-              <option value="hostess_2">Хостес 2</option>
+              <option value="hostess">Хостес</option>
             </select>
           </div>
           <div className="space-y-2">

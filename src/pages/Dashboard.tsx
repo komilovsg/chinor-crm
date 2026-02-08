@@ -1,5 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import {
   BarChart3,
   Calendar,
@@ -41,6 +50,66 @@ import type {
   SegmentCount,
   UserActivityStats,
 } from '@/types'
+
+/** График динамики бронирований по дням (Recharts, в стиле Radix/shadcn). */
+function BookingDynamicsChart({ data }: { data: BookingDynamicsItem[] }) {
+  const chartData = useMemo(
+    () =>
+      data.map(({ date, count }) => ({
+        date,
+        dayLabel: new Date(date + 'Z').toLocaleDateString('ru-RU', {
+          day: '2-digit',
+          month: '2-digit',
+        }),
+        count,
+      })),
+    [data]
+  )
+  return (
+    <div className="h-[220px] w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+          <XAxis
+            dataKey="dayLabel"
+            tickLine={false}
+            axisLine={false}
+            tick={{ fontSize: 11 }}
+            className="text-muted-foreground"
+          />
+          <YAxis
+            allowDecimals={false}
+            tickLine={false}
+            axisLine={false}
+            tick={{ fontSize: 11 }}
+            className="text-muted-foreground"
+            width={24}
+          />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: 'hsl(var(--card))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: 'var(--radius)',
+            }}
+            labelStyle={{ color: 'hsl(var(--card-foreground))' }}
+            formatter={(value: number | undefined) => [`${value ?? 0} брон.`, 'Брони']}
+            labelFormatter={(_, payload) =>
+              payload?.[0]?.payload?.dayLabel
+                ? `${payload[0].payload.dayLabel}`
+                : ''
+            }
+          />
+          <Bar
+            dataKey="count"
+            fill="hsl(var(--primary))"
+            radius={[4, 4, 0, 0]}
+            maxBarSize={48}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
 
 function formatActivityDate(iso: string): string {
   try {
@@ -211,33 +280,7 @@ export function Dashboard() {
                 <p>Нет бронирований за этот период</p>
               </div>
             ) : (
-              <div className="flex gap-1 h-[200px] pt-2">
-                {bookingDynamics.map(({ date, count }) => {
-                  const maxCount = Math.max(1, ...bookingDynamics.map((d) => d.count))
-                  const barHeightPx = maxCount > 0 ? Math.round((count / maxCount) * 160) : 0
-                  const dayLabel = new Date(date + 'Z').toLocaleDateString('ru-RU', {
-                    day: '2-digit',
-                    month: '2-digit',
-                  })
-                  return (
-                    <div
-                      key={date}
-                      className="flex-1 min-w-0 flex flex-col items-center justify-end gap-1 h-full"
-                      title={`${dayLabel}: ${count} брон.`}
-                    >
-                      <div
-                        className="w-full rounded-t bg-primary/80 transition-all shrink-0"
-                        style={{
-                          height: count > 0 ? `${Math.max(barHeightPx, 4)}px` : '0',
-                        }}
-                      />
-                      <span className="text-[10px] text-muted-foreground truncate w-full text-center shrink-0">
-                        {dayLabel}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
+              <BookingDynamicsChart data={bookingDynamics} />
             )}
           </CardContent>
         </Card>

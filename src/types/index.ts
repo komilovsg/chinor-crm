@@ -2,7 +2,7 @@
 export interface User {
   id: number
   email: string
-  role: 'admin' | 'hostess_1' | 'hostess_2'
+  role: 'admin' | 'hostess'
   display_name: string
 }
 
@@ -133,7 +133,7 @@ export interface Settings {
 export interface CrmUser {
   id: number
   email: string
-  role: 'admin' | 'hostess_1' | 'hostess_2'
+  role: 'admin' | 'hostess'
   display_name: string
   created_at: string | null
 }
