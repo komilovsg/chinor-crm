@@ -26,6 +26,8 @@ import { Button } from '@/components/ui/button'
 import { getApiErrorMessage } from '@/api/client'
 import { toast } from '@/lib/toast'
 import {
+  getBookingDynamics,
+  getDashboardSegments,
   getDashboardStats,
   getRecentActivity,
   getUserActivityStats,
@@ -33,8 +35,10 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { DashboardSkeleton } from '@/components/skeletons'
 import type {
+  BookingDynamicsItem,
   DashboardStats,
   RecentActivityItem,
+  SegmentCount,
   UserActivityStats,
 } from '@/types'
 
@@ -63,12 +67,22 @@ export function Dashboard() {
   const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([])
   const [userStats, setUserStats] = useState<UserActivityStats[]>([])
   const [activityLoading, setActivityLoading] = useState(false)
+  const [segments, setSegments] = useState<SegmentCount[]>([])
+  const [bookingDynamics, setBookingDynamics] = useState<BookingDynamicsItem[]>([])
 
   useEffect(() => {
     let cancelled = false
-    getDashboardStats()
-      .then((data) => {
-        if (!cancelled) setStats(data)
+    Promise.all([
+      getDashboardStats(),
+      getDashboardSegments(),
+      getBookingDynamics(14),
+    ])
+      .then(([statsData, segmentsData, dynamicsData]) => {
+        if (!cancelled) {
+          setStats(statsData)
+          setSegments(segmentsData)
+          setBookingDynamics(dynamicsData)
+        }
       })
       .catch((err) => {
         if (!cancelled) {
@@ -188,11 +202,43 @@ export function Dashboard() {
         <Card className="min-h-[280px]">
           <CardHeader>
             <CardTitle>Динамика бронирований</CardTitle>
-            <CardDescription>График по периодам</CardDescription>
+            <CardDescription>Последние 14 дней</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <TrendingUp className="h-12 w-12 mb-2 opacity-50" />
-            <p>Нет данных за этот период</p>
+          <CardContent>
+            {bookingDynamics.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <TrendingUp className="h-12 w-12 mb-2 opacity-50" />
+                <p>Нет бронирований за этот период</p>
+              </div>
+            ) : (
+              <div className="flex gap-1 h-[200px] pt-2">
+                {bookingDynamics.map(({ date, count }) => {
+                  const maxCount = Math.max(1, ...bookingDynamics.map((d) => d.count))
+                  const barHeightPx = maxCount > 0 ? Math.round((count / maxCount) * 160) : 0
+                  const dayLabel = new Date(date + 'Z').toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                  })
+                  return (
+                    <div
+                      key={date}
+                      className="flex-1 min-w-0 flex flex-col items-center justify-end gap-1 h-full"
+                      title={`${dayLabel}: ${count} брон.`}
+                    >
+                      <div
+                        className="w-full rounded-t bg-primary/80 transition-all shrink-0"
+                        style={{
+                          height: count > 0 ? `${Math.max(barHeightPx, 4)}px` : '0',
+                        }}
+                      />
+                      <span className="text-[10px] text-muted-foreground truncate w-full text-center shrink-0">
+                        {dayLabel}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card className="min-h-[280px]">
@@ -200,9 +246,36 @@ export function Dashboard() {
             <CardTitle>Сегменты гостей</CardTitle>
             <CardDescription>Распределение по сегментам</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <Users className="h-12 w-12 mb-2 opacity-50" />
-            <p>Нет данных по сегментам</p>
+          <CardContent>
+            {segments.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <Users className="h-12 w-12 mb-2 opacity-50" />
+                <p>Нет гостей в базе</p>
+              </div>
+            ) : (
+              <div className="space-y-4 pt-2">
+                {segments.map(({ segment, count }) => {
+                  const total = segments.reduce((s, x) => s + x.count, 0)
+                  const pct = total > 0 ? (count / total) * 100 : 0
+                  return (
+                    <div key={segment} className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="font-medium">{segment}</span>
+                        <span className="text-muted-foreground">
+                          {count} {pct > 0 ? `(${pct.toFixed(0)}%)` : ''}
+                        </span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full bg-primary rounded-full transition-all"
+                          style={{ width: `${pct}%`, minWidth: count > 0 ? '4px' : '0' }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

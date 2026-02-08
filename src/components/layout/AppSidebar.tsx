@@ -12,7 +12,6 @@ import {
   LogOut,
 } from 'lucide-react'
 import { ChinorLogo } from '@/components/icons'
-import { VisitsCalendar } from '@/components/layout/VisitsCalendar'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
@@ -36,24 +35,6 @@ function getInitials(displayName: string): string {
     return (parts[0][0] + parts[1][0]).toUpperCase()
   }
   return displayName.slice(0, 2).toUpperCase() || 'АД'
-}
-
-const WEEKDAY_SHORT = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб']
-
-/** Миниатюра: сегодняшняя дата и день недели (для свёрнутой панели). */
-function TodayMiniature() {
-  const today = new Date()
-  const day = today.getDate()
-  const weekday = WEEKDAY_SHORT[today.getDay()]
-  return (
-    <div
-      className="flex flex-col items-center justify-center rounded-md border border-border bg-muted/50 py-2 px-1"
-      title={`Сегодня: ${day} ${today.toLocaleDateString('ru-RU', { month: 'long' })}`}
-    >
-      <span className="text-lg font-semibold leading-none text-foreground">{day}</span>
-      <span className="text-[10px] uppercase text-muted-foreground mt-0.5">{weekday}</span>
-    </div>
-  )
 }
 
 interface AppSidebarProps {
@@ -161,19 +142,6 @@ export function AppSidebar({
               ))}
           </div>
         </nav>
-        {user?.role === 'admin' && (
-          <>
-            {isCollapsed ? (
-              <div className="px-2 pb-2">
-                <TodayMiniature />
-              </div>
-            ) : (
-              <div className="px-3 pb-2">
-                <VisitsCalendar />
-              </div>
-            )}
-          </>
-        )}
         {onToggleCollapse && (
           <div className="shrink-0 border-t border-border p-2">
             <Button

@@ -1,10 +1,11 @@
 import { apiClient, USE_MOCKS } from './client'
 import * as mocks from './mocks'
 import type {
+  BookingDynamicsItem,
   DashboardStats,
   RecentActivityItem,
+  SegmentCount,
   UserActivityStats,
-  VisitsByDateItem,
 } from '@/types'
 
 /** Получить статистику дашборда. */
@@ -13,6 +14,25 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     return mocks.mockDashboard.getStats()
   }
   const response = await apiClient.get<DashboardStats>('/dashboard/stats')
+  return response.data
+}
+
+/** Распределение по сегментам гостей. */
+export async function getDashboardSegments(): Promise<SegmentCount[]> {
+  if (USE_MOCKS) return []
+  const response = await apiClient.get<SegmentCount[]>('/dashboard/segments')
+  return response.data
+}
+
+/** Динамика бронирований по дням. */
+export async function getBookingDynamics(
+  days: number = 14
+): Promise<BookingDynamicsItem[]> {
+  if (USE_MOCKS) return []
+  const response = await apiClient.get<BookingDynamicsItem[]>(
+    '/dashboard/booking-dynamics',
+    { params: { days } }
+  )
   return response.data
 }
 
@@ -33,19 +53,6 @@ export async function getUserActivityStats(): Promise<UserActivityStats[]> {
   if (USE_MOCKS) return []
   const response = await apiClient.get<UserActivityStats[]>(
     '/dashboard/user-stats'
-  )
-  return response.data
-}
-
-/** Визиты по дням для календаря (только админ). */
-export async function getVisitsByDate(params?: {
-  from_date?: string
-  to_date?: string
-}): Promise<VisitsByDateItem[]> {
-  if (USE_MOCKS) return []
-  const response = await apiClient.get<VisitsByDateItem[]>(
-    '/dashboard/visits-by-date',
-    { params }
   )
   return response.data
 }

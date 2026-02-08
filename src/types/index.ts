@@ -14,6 +14,8 @@ export interface Guest {
   email: string | null
   segment: string
   visits_count: number
+  /** Количество подтверждённых броней (не меняется при «Добавить визит») */
+  confirmed_bookings_count?: number
   last_visit_at: string | null
   created_at: string
   /** Исключить из рассылок (галочка в разделе Гости) */
@@ -41,6 +43,18 @@ export interface DashboardStats {
   noShowRate: number
 }
 
+/** Сегмент и количество гостей для карточки «Сегменты гостей» */
+export interface SegmentCount {
+  segment: string
+  count: number
+}
+
+/** Бронирования по дням для карточки «Динамика бронирований» */
+export interface BookingDynamicsItem {
+  date: string
+  count: number
+}
+
 /** Запись журнала активности (только админ) */
 export interface RecentActivityItem {
   id: number
@@ -63,12 +77,6 @@ export interface UserActivityStats {
   bookings_created: number
   guests_created: number
   status_changes: number
-}
-
-/** Визиты по дате для календаря */
-export interface VisitsByDateItem {
-  date: string
-  count: number
 }
 
 /** Campaign (API contract) */

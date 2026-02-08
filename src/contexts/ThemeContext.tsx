@@ -22,8 +22,12 @@ function getStored(): ThemeValue {
 }
 
 function prefersDark(): boolean {
-  if (typeof window === 'undefined') return true
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
+  if (typeof window === 'undefined') return false
+  try {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+  } catch {
+    return false
+  }
 }
 
 function applyTheme(value: ThemeValue) {

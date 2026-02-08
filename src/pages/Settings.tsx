@@ -508,11 +508,16 @@ export function Settings() {
                 disabled={recalcLoading}
                 onClick={async () => {
                   setRecalcLoading(true)
+                  setError(null)
                   try {
+                    await updateSettings({
+                      segment_regular_threshold: segmentRegular,
+                      segment_vip_threshold: segmentVip,
+                    })
                     await recalcSegments()
                     setSaveSuccess(true)
                     setTimeout(() => setSaveSuccess(false), 2000)
-                    toast.success('Сегменты пересчитаны')
+                    toast.success('Сегменты пересчитаны по текущим порогам')
                   } catch (err) {
                     const msg = getApiErrorMessage(err, 'Ошибка пересчёта')
                     setError(msg)

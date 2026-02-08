@@ -4,7 +4,10 @@
     <script>
       (function () {
         var t = localStorage.getItem('chinor-theme');
-        var dark = t === 'dark' || (t !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        var dark;
+        if (t === 'light') dark = false;
+        else if (t === 'dark') dark = true;
+        else dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         document.documentElement.classList.toggle('dark', dark);
       })();
     </script>
