@@ -114,6 +114,7 @@ const mockSettingsData: Settings = {
   bookingWebhookUrl: '',
   restaurant_place: 'CHINOR',
   default_table_message: 'будет назначен',
+  timezone: 'Asia/Dushanbe',
 }
 
 /** Мок-функции. */

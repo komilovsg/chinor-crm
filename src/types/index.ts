@@ -127,6 +127,7 @@ export interface Settings {
   bookingWebhookUrl: string
   restaurant_place: string
   default_table_message: string
+  timezone: string
 }
 
 /** CRM User (admin only API) */

@@ -12,6 +12,7 @@ export interface UpdateSettingsRequest {
   bookingWebhookUrl?: string
   restaurant_place?: string
   default_table_message?: string
+  timezone?: string
 }
 
 /** Пересчитать сегменты всех гостей по текущим порогам. Доступ: только admin. */

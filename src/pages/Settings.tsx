@@ -84,6 +84,7 @@ export function Settings() {
   const [bookingWebhookUrl, setBookingWebhookUrl] = useState('')
   const [restaurantPlace, setRestaurantPlace] = useState('CHINOR')
   const [defaultTableMessage, setDefaultTableMessage] = useState('будет назначен')
+  const [timezone, setTimezone] = useState('Asia/Dushanbe')
   const [saving, setSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [recalcLoading, setRecalcLoading] = useState(false)
@@ -110,6 +111,7 @@ export function Settings() {
       setBookingWebhookUrl(res.bookingWebhookUrl ?? '')
       setRestaurantPlace(res.restaurant_place ?? 'CHINOR')
       setDefaultTableMessage(res.default_table_message ?? 'будет назначен')
+      setTimezone(res.timezone ?? 'Asia/Dushanbe')
     } catch (err) {
       const msg = getApiErrorMessage(err, 'Ошибка загрузки')
       setError(msg)
@@ -157,6 +159,7 @@ export function Settings() {
         bookingWebhookUrl,
         restaurant_place: restaurantPlace,
         default_table_message: defaultTableMessage,
+        timezone: timezone,
       })
       setData(updated)
       setSaveSuccess(true)
@@ -392,6 +395,20 @@ export function Settings() {
                     value={defaultTableMessage}
                     onChange={(e) => setDefaultTableMessage(e.target.value)}
                   />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="settings-timezone">Часовой пояс ресторана</Label>
+                  <Input
+                    id="settings-timezone"
+                    type="text"
+                    placeholder="Asia/Dushanbe"
+                    value={timezone}
+                    onChange={(e) => setTimezone(e.target.value)}
+                    className="font-mono text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Время брони вводится и отображается в этом поясе. Примеры: Asia/Dushanbe, Asia/Tashkent, Europe/Moscow.
+                  </p>
                 </div>
                 <div className="mt-4 space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
