@@ -115,6 +115,8 @@ export function Bookings() {
   const [formError, setFormError] = useState<string | null>(null)
 
   const [sort, setSort] = useState<{ column: SortColumn; dir: SortDir } | null>(null)
+  /** Блокировка повторного клика: только одна бронь обновляется за раз, без путаницы между строками. */
+  const [pendingStatusId, setPendingStatusId] = useState<number | null>(null)
 
   const handleSort = useCallback((column: SortColumn) => {
     setSort((prev) => {
@@ -206,6 +208,8 @@ export function Bookings() {
   }
 
   const handleStatusChange = async (id: number, status: BookingStatus) => {
+    if (pendingStatusId !== null) return
+    setPendingStatusId(id)
     try {
       await updateBookingStatus(id, { status })
       setData((prev) => ({
@@ -219,6 +223,8 @@ export function Bookings() {
       const msg = getApiErrorMessage(err, 'Не удалось обновить статус')
       setError(msg)
       toast.error(msg)
+    } finally {
+      setPendingStatusId(null)
     }
   }
 
@@ -461,41 +467,42 @@ export function Bookings() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <DropdownMenu>
+                      <DropdownMenu key={`status-menu-${booking.id}`}>
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            aria-label="Действия"
+                            aria-label={`Действия по брони #${booking.id}`}
+                            disabled={pendingStatusId !== null}
                           >
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Действия</DropdownMenuLabel>
+                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenuLabel>Бронь #{booking.id}</DropdownMenuLabel>
                           <DropdownMenuItem
                             onClick={() => handleStatusChange(booking.id, 'confirmed')}
-                            disabled={booking.status === 'confirmed'}
+                            disabled={booking.status === 'confirmed' || pendingStatusId !== null}
                           >
                             Подтвердить
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleStatusChange(booking.id, 'confirmed')}
-                            disabled={booking.status === 'confirmed'}
+                            disabled={booking.status === 'confirmed' || pendingStatusId !== null}
                           >
                             Отметить прибытие
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleStatusChange(booking.id, 'no_show')}
-                            disabled={booking.status === 'no_show'}
+                            disabled={booking.status === 'no_show' || pendingStatusId !== null}
                             className="text-muted-foreground"
                           >
                             Не пришел (No-Show)
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleStatusChange(booking.id, 'canceled')}
-                            disabled={booking.status === 'canceled'}
+                            disabled={booking.status === 'canceled' || pendingStatusId !== null}
                             className="text-destructive focus:text-destructive"
                           >
                             Отменить бронь
