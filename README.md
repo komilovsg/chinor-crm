@@ -1,18 +1,26 @@
 # CHINOR CRM — Frontend
 
+<p align="center">
+  <img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React" />
+  <img src="https://img.shields.io/badge/TypeScript-5.6-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" />
+  <img src="https://img.shields.io/badge/Tailwind-3-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind" />
+  <img src="https://img.shields.io/badge/shadcn%2Fui-Radix-000000?style=flat-square" alt="shadcn/ui" />
+</p>
+
 <div align="center">
 
 **Современный SPA для управления ресторанной CRM: гости, бронирования, рассылки и настройки.**
 
-[React](https://react.dev/) · [TypeScript](https://www.typescriptlang.org/) · [Vite](https://vitejs.dev/) · [Tailwind CSS](https://tailwindcss.com/) · [shadcn/ui](https://ui.shadcn.com/)
+Единая точка входа для администраторов и хостес — дашборд с метриками, бронирования, база гостей с сегментами, рассылки по аудитории и гибкие настройки. Адаптивный интерфейс, светлая и тёмная тема, работа без бэкенда на моках.
 
 </div>
 
 ---
 
-## О проекте
+## Идея
 
-Фронтенд-приложение **CHINOR CRM System** — единая точка входа для администраторов и хостес: дашборд с метриками, управление бронированиями, база гостей с сегментами, рассылки по аудитории и настройки (тема, уведомления, бэкап). Интерфейс адаптирован под мобильные устройства и поддерживает светлую и тёмную тему.
+Фронтенд **CHINOR CRM System** даёт команде ресторана один интерфейс: посмотреть метрики, принять или переназначить бронь, найти гостя, отправить рассылку по сегменту (VIP, Постоянные, Новички, Все) и настроить пороги сегментов, тему и уведомления. Всё с учётом ролей (admin / hostess), с защищёнными маршрутами по JWT и с возможностью разрабатывать и тестировать интерфейс без запущенного бэкенда — за счёт моков.
 
 ---
 
@@ -20,13 +28,14 @@
 
 | Раздел | Описание |
 |--------|----------|
-| **Дашборд** | Карточки метрик (брони, гости, no-show), блоки «Динамика» и «Сегменты» |
-| **Бронирования** | Таблица с поиском и фильтром по дате, создание брони, смена статуса |
+| **Дашборд** | Карточки метрик (брони, гости, no-show), блоки «Динамика» и «Сегменты гостей» |
+| **Бронирования** | Таблица с поиском и фильтром по дате, создание брони (гость или новый), смена статуса |
 | **Гости** | Статистика по сегментам (Всего, VIP, Постоянные, Новички), таблица, экспорт в CSV |
-| **Рассылки** | Выбор аудитории, текст с переменными `{name}`, `{last_visit}`, история рассылок |
-| **Настройки** | Тема (день / ночь / как в системе), тостер-уведомления, авто-бэкап |
+| **Рассылки** | Выбор аудитории, текст с переменными `{name}`, `{last_visit}`, загрузка изображения, история рассылок |
+| **Настройки** | Тема (день / ночь / как в системе), уведомления, авто-бэкап, пороги сегментов, webhook-интеграции |
+| **Пользователи** | Управление пользователями (admin) |
 
-Дополнительно: защищённые маршруты (JWT), сайдбар с сворачиванием, мобильное меню (Sheet), скелетоны загрузки, единый API-слой с поддержкой моков и реального бэкенда.
+Дополнительно: сайдбар с сворачиванием, мобильное меню (Sheet), скелетоны загрузки, единый API-слой с поддержкой моков и реального бэкенда, перехват 401 и редирект на логин.
 
 ---
 
@@ -38,40 +47,42 @@
 - **Tailwind CSS** — стили, тёмная/светлая тема (CSS-переменные)
 - **shadcn/ui** (Radix UI) — кнопки, карточки, формы, таблицы, диалоги, Sheet, Select, Switch
 - **Lucide React** — иконки
-- **Axios** — HTTP-клиент, перехват 401 и JWT в заголовках
+- **Axios** — HTTP-клиент, JWT в заголовках
+- **Recharts** — графики на дашборде
 
 ---
 
-## Структура проекта
+## Дерево проекта
 
 ```
 frontend/
-├── public/                 # Статика
+├── public/                    # Статика
 ├── src/
-│   ├── main.tsx            # Точка входа, ThemeProvider
-│   ├── App.tsx              # Router + ThemeProvider
-│   ├── routes.tsx           # Маршруты и ProtectedRoute
-│   ├── api/                 # Слой API
-│   │   ├── client.ts        # Axios, baseURL, 401 → /login
-│   │   ├── auth.ts          # Логин
-│   │   ├── dashboard.ts     # Статистика
-│   │   ├── bookings.ts      # Бронирования
-│   │   ├── guests.ts        # Гости и экспорт CSV
-│   │   ├── broadcasts.ts    # Рассылки
-│   │   ├── settings.ts      # Настройки
-│   │   └── mocks.ts         # Моки для разработки без бэка
+│   ├── main.tsx               # Точка входа, провайдеры
+│   ├── App.tsx                # Router, ThemeProvider
+│   ├── routes.tsx             # Маршруты и ProtectedRoute
+│   ├── api/
+│   │   ├── client.ts          # Axios, baseURL, 401 → /login
+│   │   ├── auth.ts            # Логин
+│   │   ├── dashboard.ts       # Статистика, сегменты, динамика
+│   │   ├── bookings.ts        # Бронирования
+│   │   ├── guests.ts          # Гости, экспорт CSV
+│   │   ├── broadcasts.ts      # Рассылки, загрузка изображения
+│   │   ├── settings.ts       # Настройки
+│   │   ├── users.ts           # Пользователи
+│   │   └── mocks.ts           # Моки для разработки без бэка
 │   ├── components/
-│   │   ├── ui/              # shadcn: Button, Card, Input, Table, Dialog, Sheet, Select, Switch…
-│   │   ├── layout/          # AppSidebar, AppHeader, MainLayout, MobileSheet
-│   │   ├── pickers/         # DatePicker, TimePicker (десктоп + мобильный Sheet)
-│   │   ├── skeletons/       # Скелетоны страниц
-│   │   └── icons/           # Логотип CHINOR
-│   ├── contexts/            # ThemeContext (день/ночь/система)
-│   ├── hooks/               # useAuth, useIsMobile
-│   ├── pages/               # Login, Dashboard, Bookings, Guests, Broadcasts, Settings
-│   ├── types/               # Типы для API (User, Guest, Booking, Settings…)
-│   ├── lib/                 # utils (cn и др.)
-│   └── index.css            # Глобальные стили и темы
+│   │   ├── ui/                # shadcn: Button, Card, Input, Table, Dialog, Sheet, Select, Switch…
+│   │   ├── layout/            # AppSidebar, AppHeader, MainLayout, MobileSheet
+│   │   ├── pickers/           # DatePicker, TimePicker (десктоп + мобильный Sheet)
+│   │   ├── skeletons/         # Скелетоны страниц
+│   │   └── icons/             # Логотип CHINOR
+│   ├── contexts/              # ThemeContext (день/ночь/система)
+│   ├── hooks/                 # useAuth, useIsMobile
+│   ├── pages/                 # Login, Dashboard, Bookings, Guests, Broadcasts, Settings, Users
+│   ├── types/                 # Типы для API (User, Guest, Booking, Settings…)
+│   ├── lib/                   # utils (cn и др.)
+│   └── index.css              # Глобальные стили и темы
 ├── index.html
 ├── package.json
 ├── tailwind.config.js
