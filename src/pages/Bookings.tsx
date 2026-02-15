@@ -480,18 +480,14 @@ export function Bookings() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                          <DropdownMenuLabel>Бронь #{booking.id}</DropdownMenuLabel>
+                          <DropdownMenuLabel className="font-normal text-muted-foreground text-xs cursor-default pointer-events-none">
+                            Бронь #{booking.id}
+                          </DropdownMenuLabel>
                           <DropdownMenuItem
                             onClick={() => handleStatusChange(booking.id, 'confirmed')}
                             disabled={booking.status === 'confirmed' || pendingStatusId !== null}
                           >
                             Подтвердить
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleStatusChange(booking.id, 'confirmed')}
-                            disabled={booking.status === 'confirmed' || pendingStatusId !== null}
-                          >
-                            Отметить прибытие
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleStatusChange(booking.id, 'no_show')}
