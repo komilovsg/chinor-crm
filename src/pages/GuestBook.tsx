@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChinorLogo } from '@/components/icons'
@@ -8,8 +9,12 @@ import { getApiErrorMessage } from '@/api/client'
 import { toast } from '@/lib/toast'
 import { createBookingGuestForm } from '@/api/bookings'
 
+/** Данные гостя, переданные с экрана регистрации (или из sessionStorage). */
+type GuestPrefill = { phone?: string; name?: string }
+
 /** Страница гостевой брони (QR): форма без авторизации, мобильный первый, тема из ThemeProvider. */
 export function GuestBook() {
+  const location = useLocation()
   const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
   const [date, setDate] = useState('')
@@ -18,6 +23,29 @@ export function GuestBook() {
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
+
+  // Подставить телефон и имя, если перешли после регистрации или из sessionStorage (один раз)
+  useEffect(() => {
+    const state = location.state as GuestPrefill | undefined
+    if (state?.phone != null && state.phone.trim() !== '') {
+      setPhone(state.phone.trim())
+      if (state.name != null) setName(state.name.trim())
+      return
+    }
+    try {
+      const raw = sessionStorage.getItem('chinor_guest_prefill')
+      if (raw) {
+        const data = JSON.parse(raw) as GuestPrefill
+        if (data.phone?.trim()) {
+          setPhone(data.phone.trim())
+          if (data.name != null) setName(String(data.name).trim())
+          sessionStorage.removeItem('chinor_guest_prefill')
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [location.state])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -88,7 +116,9 @@ export function GuestBook() {
             <CardTitle className="text-xl">Забронировать стол</CardTitle>
           </div>
           <p className="text-sm text-muted-foreground">
-            Укажите контактные данные и желаемые дату и время — заявка сразу попадёт в систему, мы вас ждём.
+            {phone.trim() && name.trim()
+              ? 'Проверьте контактные данные и укажите дату и время — заявка сразу попадёт в систему.'
+              : 'Укажите контактные данные и желаемые дату и время — заявка сразу попадёт в систему, мы вас ждём.'}
           </p>
         </CardHeader>
         <CardContent>

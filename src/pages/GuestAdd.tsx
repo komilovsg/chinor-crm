@@ -41,6 +41,14 @@ export function GuestAdd() {
         email: email.trim() || undefined,
       })
       setSubmitted(true)
+      try {
+        sessionStorage.setItem(
+          'chinor_guest_prefill',
+          JSON.stringify({ phone: phoneTrim, name: nameTrim })
+        )
+      } catch {
+        /* ignore */
+      }
       toast.success('Регистрация успешно пройдена')
     } catch (err) {
       const isConflict =
@@ -73,7 +81,7 @@ export function GuestAdd() {
             <Button
               type="button"
               className="w-full min-h-[48px] text-base"
-              onClick={() => navigate('/book')}
+              onClick={() => navigate('/book', { state: { phone, name } })}
             >
               Забронировать стол
             </Button>
