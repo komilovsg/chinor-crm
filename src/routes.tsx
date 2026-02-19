@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { MainLayout } from '@/components/layout'
 import { useAuth } from '@/hooks/useAuth'
 import { Login } from '@/pages/Login'
+import { GuestBook } from '@/pages/GuestBook'
 import { Dashboard } from '@/pages/Dashboard'
 import { Bookings } from '@/pages/Bookings'
 import { Guests } from '@/pages/Guests'
@@ -33,6 +34,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/book" element={<GuestBook />} />
       <Route path="/" element={<ProtectedRoute />}>
         <Route index element={<Dashboard />} />
         <Route path="bookings" element={<Bookings />} />

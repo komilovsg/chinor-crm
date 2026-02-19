@@ -73,3 +73,14 @@ export async function updateBookingStatus(
   const response = await apiClient.patch<Booking>(`/bookings/${id}/status`, data)
   return response.data
 }
+
+/** Создать бронь с гостевой формы (QR): POST /api/public/book, без JWT. */
+export async function createBookingGuestForm(
+  data: CreateBookingRequest
+): Promise<Booking> {
+  if (USE_MOCKS) {
+    return mocks.mockBookings.create(data)
+  }
+  const response = await apiClient.post<Booking>('/public/book', data)
+  return response.data
+}

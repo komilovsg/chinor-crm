@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Bell, ChevronDown, ChevronUp, Database, Download, MessageCircle, Save, Sun, Users } from 'lucide-react'
+import { Bell, ChevronDown, ChevronUp, Database, Download, MessageCircle, QrCode, Save, Sun, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -92,6 +92,12 @@ export function Settings() {
   const [broadcastHistory, setBroadcastHistory] = useState<BroadcastHistoryItem[]>([])
   const [broadcastHistoryLoading, setBroadcastHistoryLoading] = useState(false)
   const [exportLoading, setExportLoading] = useState(false)
+  const [guestBookUrl, setGuestBookUrl] = useState('')
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setGuestBookUrl(`${window.location.origin}/book`)
+    }
+  }, [])
 
   const loadSettings = useCallback(async () => {
     if (!isAdmin) {
@@ -479,6 +485,45 @@ export function Settings() {
               </p>
             </CardContent>
           )}
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5 text-primary" />
+              Гостевая бронь (QR)
+            </CardTitle>
+            <CardDescription>
+              Ссылка и QR-код для гостей: сканируют в зале и попадают на форму бронирования.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col gap-2">
+              <Label className="text-sm font-medium">Ссылка для гостевой брони</Label>
+              <Input
+                readOnly
+                type="url"
+                value={guestBookUrl}
+                className="font-mono text-sm bg-muted/50"
+                aria-label="URL страницы бронирования для гостей"
+              />
+            </div>
+            {guestBookUrl && (
+              <div className="flex flex-col gap-2">
+                <Label className="text-sm font-medium">QR-код</Label>
+                <p className="text-xs text-muted-foreground">
+                  Распечатайте или сохраните изображение и разместите в зале. Гости сканируют камерой телефона.
+                </p>
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(guestBookUrl)}`}
+                  alt="QR-код для страницы бронирования"
+                  width={256}
+                  height={256}
+                  className="rounded-lg border border-border bg-white p-2"
+                />
+              </div>
+            )}
+          </CardContent>
         </Card>
 
         <Card>
