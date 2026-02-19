@@ -69,6 +69,15 @@ export async function createGuest(data: CreateGuestRequest): Promise<Guest> {
   return response.data
 }
 
+/** Добавить гостя с публичной формы (QR): POST /api/public/guest, без JWT. */
+export async function createGuestGuestForm(data: CreateGuestRequest): Promise<Guest> {
+  if (USE_MOCKS) {
+    return mocks.mockGuests.create(data)
+  }
+  const response = await apiClient.post<Guest>('/public/guest', data)
+  return response.data
+}
+
 /** Обновить данные гостя. */
 export async function updateGuest(
   id: number,

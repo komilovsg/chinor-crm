@@ -93,9 +93,12 @@ export function Settings() {
   const [broadcastHistoryLoading, setBroadcastHistoryLoading] = useState(false)
   const [exportLoading, setExportLoading] = useState(false)
   const [guestBookUrl, setGuestBookUrl] = useState('')
+  const [guestAddUrl, setGuestAddUrl] = useState('')
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setGuestBookUrl(`${window.location.origin}/book`)
+      const origin = window.location.origin
+      setGuestBookUrl(`${origin}/book`)
+      setGuestAddUrl(`${origin}/guest`)
     }
   }, [])
 
@@ -510,13 +513,52 @@ export function Settings() {
             </div>
             {guestBookUrl && (
               <div className="flex flex-col gap-2">
-                <Label className="text-sm font-medium">QR-код</Label>
+                <Label className="text-sm font-medium">QR-код (бронь)</Label>
                 <p className="text-xs text-muted-foreground">
                   Распечатайте или сохраните изображение и разместите в зале. Гости сканируют камерой телефона.
                 </p>
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(guestBookUrl)}`}
                   alt="QR-код для страницы бронирования"
+                  width={256}
+                  height={256}
+                  className="rounded-lg border border-border bg-white p-2"
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5 text-primary" />
+              Добавить гостя (QR)
+            </CardTitle>
+            <CardDescription>
+              Ссылка и QR для формы «добавить себя в гости» — гость заполняет телефон и имя и попадает в базу.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col gap-2">
+              <Label className="text-sm font-medium">Ссылка «Добавить гостя»</Label>
+              <Input
+                readOnly
+                type="url"
+                value={guestAddUrl}
+                className="font-mono text-sm bg-muted/50"
+                aria-label="URL страницы добавления гостя"
+              />
+            </div>
+            {guestAddUrl && (
+              <div className="flex flex-col gap-2">
+                <Label className="text-sm font-medium">QR-код</Label>
+                <p className="text-xs text-muted-foreground">
+                  Разместите в зале — гости сканируют и добавляют себя в список без брони.
+                </p>
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(guestAddUrl)}`}
+                  alt="QR-код для добавления гостя"
                   width={256}
                   height={256}
                   className="rounded-lg border border-border bg-white p-2"

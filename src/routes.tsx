@@ -3,6 +3,7 @@ import { MainLayout } from '@/components/layout'
 import { useAuth } from '@/hooks/useAuth'
 import { Login } from '@/pages/Login'
 import { GuestBook } from '@/pages/GuestBook'
+import { GuestAdd } from '@/pages/GuestAdd'
 import { Dashboard } from '@/pages/Dashboard'
 import { Bookings } from '@/pages/Bookings'
 import { Guests } from '@/pages/Guests'
@@ -35,6 +36,7 @@ export function AppRoutes() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/book" element={<GuestBook />} />
+      <Route path="/guest" element={<GuestAdd />} />
       <Route path="/" element={<ProtectedRoute />}>
         <Route index element={<Dashboard />} />
         <Route path="bookings" element={<Bookings />} />
