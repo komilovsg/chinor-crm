@@ -92,7 +92,7 @@ export function GuestBook() {
           </p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 min-w-0 overflow-hidden">
             <div className="space-y-2">
               <Label htmlFor="guest-book-phone">Телефон</Label>
               <Input
@@ -121,7 +121,7 @@ export function GuestBook() {
                 className="min-h-[48px] text-base"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-0">
               <Label htmlFor="guest-book-date">Дата визита</Label>
               <Input
                 id="guest-book-date"
@@ -130,10 +130,10 @@ export function GuestBook() {
                 onChange={(e) => setDate(e.target.value)}
                 disabled={submitting}
                 required
-                className="min-h-[48px] text-base"
+                className="min-h-[48px] text-base w-full max-w-full min-w-0 box-border"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-0">
               <Label htmlFor="guest-book-time">Время</Label>
               <Input
                 id="guest-book-time"
@@ -142,7 +142,7 @@ export function GuestBook() {
                 onChange={(e) => setTime(e.target.value)}
                 disabled={submitting}
                 required
-                className="min-h-[48px] text-base"
+                className="min-h-[48px] text-base w-full max-w-full min-w-0 box-border"
               />
             </div>
             <div className="space-y-2">

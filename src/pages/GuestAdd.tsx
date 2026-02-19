@@ -4,9 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChinorLogo } from '@/components/icons'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import axios from 'axios'
 import { getApiErrorMessage } from '@/api/client'
 import { toast } from '@/lib/toast'
 import { createGuestGuestForm } from '@/api/guests'
+
+/** Сообщение для пользователя, когда гость с таким телефоном уже есть в базе. */
+const GUEST_EXISTS_MESSAGE =
+  'Гость с таким номером телефона уже есть в списке. Если это вы — оформите бронь по ссылке «Забронировать стол» или войдите в приложение.'
 
 /** Страница «Добавить гостя» (QR): форма без авторизации, мобильный первый. */
 export function GuestAdd() {
@@ -36,7 +41,12 @@ export function GuestAdd() {
       setSubmitted(true)
       toast.success('Вы добавлены в список гостей')
     } catch (err) {
-      const msg = getApiErrorMessage(err, 'Не удалось добавить')
+      const isConflict =
+        axios.isAxiosError(err) &&
+        err.response?.status === 409 &&
+        typeof err.response?.data?.detail === 'string' &&
+        err.response.data.detail.toLowerCase().includes('already exists')
+      const msg = isConflict ? GUEST_EXISTS_MESSAGE : getApiErrorMessage(err, 'Не удалось добавить')
       setFormError(msg)
       toast.error(msg)
     } finally {
