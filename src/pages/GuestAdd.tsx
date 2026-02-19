@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChinorLogo } from '@/components/icons'
@@ -13,8 +14,9 @@ import { createGuestGuestForm } from '@/api/guests'
 const GUEST_EXISTS_MESSAGE =
   'Гость с таким номером телефона уже есть в списке. Если это вы — оформите бронь по ссылке «Забронировать стол» или войдите в приложение.'
 
-/** Страница «Добавить гостя» (QR): форма без авторизации, мобильный первый. */
+/** Страница регистрации гостя (QR): форма без авторизации, мобильный первый. */
 export function GuestAdd() {
+  const navigate = useNavigate()
   const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -39,7 +41,7 @@ export function GuestAdd() {
         email: email.trim() || undefined,
       })
       setSubmitted(true)
-      toast.success('Вы добавлены в список гостей')
+      toast.success('Регистрация успешно пройдена')
     } catch (err) {
       const isConflict =
         axios.isAxiosError(err) &&
@@ -61,11 +63,20 @@ export function GuestAdd() {
           <CardHeader>
             <div className="flex items-center gap-3 justify-center">
               <ChinorLogo size={32} />
-              <CardTitle className="text-xl">Спасибо!</CardTitle>
+              <CardTitle className="text-xl">Регистрация успешно пройдена</CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="text-center text-muted-foreground">
-            <p>Вы добавлены в список гостей. Ждём вас!</p>
+          <CardContent className="text-center space-y-4">
+            <p className="text-muted-foreground">
+              Вы в списке гостей. Можете забронировать стол — заявка сразу попадёт к нам.
+            </p>
+            <Button
+              type="button"
+              className="w-full min-h-[48px] text-base"
+              onClick={() => navigate('/book')}
+            >
+              Забронировать стол
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -78,7 +89,7 @@ export function GuestAdd() {
         <CardHeader className="space-y-1">
           <div className="flex items-center gap-3">
             <ChinorLogo size={32} />
-            <CardTitle className="text-xl">Добавить себя в гости</CardTitle>
+            <CardTitle className="text-xl">Зарегистрироваться</CardTitle>
           </div>
           <p className="text-sm text-muted-foreground">
             Укажите контактные данные — мы внесём вас в список гостей.

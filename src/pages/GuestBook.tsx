@@ -72,7 +72,7 @@ export function GuestBook() {
             </div>
           </CardHeader>
           <CardContent className="text-center text-muted-foreground">
-            <p>Ваша заявка принята. Ожидайте, пожалуйста.</p>
+            <p>Бронь принята и уже в нашем календаре. Ожидайте, пожалуйста.</p>
           </CardContent>
         </Card>
       </div>
@@ -88,7 +88,7 @@ export function GuestBook() {
             <CardTitle className="text-xl">Забронировать стол</CardTitle>
           </div>
           <p className="text-sm text-muted-foreground">
-            Укажите контактные данные и желаемое время — мы внесём вас в список.
+            Укажите контактные данные и желаемые дату и время — заявка сразу попадёт в систему, мы вас ждём.
           </p>
         </CardHeader>
         <CardContent>
